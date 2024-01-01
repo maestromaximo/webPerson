@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ale's Page</title>
+    {% load static %}
+    <!-- Include Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.1/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+<!-- navbar.html -->
+<nav class="bg-gray-100 shadow-md">
+    <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+        
+        <!-- Logo and Brand Name -->
+        <a class="text-lg text-gray-800 flex items-center" href="/">
+            <!-- Logo Image -->
+            <img src="{% static 'images/logo.png' %}" alt="Logo" class="h-10 mr-3">
+            Ale's page
+        </a>
+
+        <!-- Primary Navigation -->
+        <div class="hidden md:flex items-center space-x-6">
+            <a href="/" class="text-gray-800 hover:text-purple-300">Home</a>
+            <a href="/api" class="text-gray-800 hover:text-purple-300">API</a>
+            <a href="/place" class="text-gray-800 hover:text-purple-300">Place</a>
+            <a href="/holder" class="text-gray-800 hover:text-purple-300">Holder</a>
+            {% if request.user.is_superuser %}
+                <a href="/admin" class="text-gray-800 hover:text-purple-300">Admin</a>
+            {% endif %}
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <div class="md:hidden flex items-center">
+            <button class="mobile-menu-button text-gray-800 hover:text-purple-300 focus:outline-none" aria-label="toggle menu">
+                <svg viewBox="0 0 24 24" class="h-8 w-8 fill-current">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4 5h16v2H4zM4 11h16v2H4zM4 17h16v2H4z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="md:hidden absolute w-full hidden transition-opacity duration-300 opacity-0" id="mobile-menu">
+        <a href="/" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Home</a>
+        <a href="/api" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">API</a>
+        <a href="/place" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Place</a>
+        <a href="/holder" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Holder</a>
+        {% if request.user.is_superuser %}
+            <a href="/admin" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Admin</a>
+        {% endif %}
+    </div>
+</nav>
+
+<script>
+// Inline script for simplicity
+document.addEventListener('DOMContentLoaded', function () {
+    var menuButton = document.querySelector('.mobile-menu-button');
+    var mobileMenu = document.getElementById('mobile-menu');
+    
+    menuButton.addEventListener('click', function () {
+        var isMenuHidden = mobileMenu.classList.contains('hidden');
+        mobileMenu.classList.toggle('hidden');
+        if (isMenuHidden) {
+            mobileMenu.style.opacity = '1';
+        } else {
+            mobileMenu.style.opacity = '0';
+        }
+    });
+});
+</script>
+</body>
+</html>

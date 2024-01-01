@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Uccelini Studios{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'soft-lavender': '#CDB4DB',
+            'pastel-pink': '#FFC8DD',
+            'baby-blue': '#A2D2FF',
+            'light-blue': '#BDE0FE',
+            'whisper-gray': '#F5F5F5',
+            'independence-purple': '#6D6875',
+            'melon': '#FFB4A2',
+          },
+          fontFamily: {
+            'serif': ['Playfair Display', 'serif'],
+            'sans': ['Source Sans Pro', 'sans-serif'],
+          },
+        },
+      },
+    }
+    </script>
+
+    {% block extrahead %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+
+    <header>
+        {% include 'navbar.html' %}
+    </header>
+
+    
+
+    <main>
+        {% block content %}
+        <!-- The main content will be inserted here -->
+        {% endblock %}
+    </main>
+
+    <footer>
+        <!-- Your site's footer goes here -->
+    </footer>
+
+    {% block extrajs %}{% endblock %}
+</body>
+</html>
