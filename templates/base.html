@@ -11,28 +11,29 @@
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Add to head section of base.html -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon/devicon.min.css">
 
     <script>
-        tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'soft-lavender': '#CDB4DB',
-            'pastel-pink': '#FFC8DD',
-            'baby-blue': '#A2D2FF',
-            'light-blue': '#BDE0FE',
-            'whisper-gray': '#F5F5F5',
-            'independence-purple': '#6D6875',
-            'melon': '#FFB4A2',
-          },
-          fontFamily: {
-            'serif': ['Playfair Display', 'serif'],
-            'sans': ['Source Sans Pro', 'sans-serif'],
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#5bc0de',
+              secondary: '#495057',
+              base: '#f8f9fa',
+            },
+            fontFamily: {
+              primary: ['Poppins', 'sans-serif'],
+              secondary: ['Open Sans', 'sans-serif'],
+            },
           },
         },
-      },
-    }
+      }
     </script>
+    
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
           c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
