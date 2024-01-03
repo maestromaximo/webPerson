@@ -4,25 +4,88 @@
 {% block title %}Alejandro Garcia Polo - Dashboard{% endblock %}
 
 {% block content %}
-
 <div id="mainBackground" class="flex flex-col justify-center w-full h-full">
-
-    <div id="mainCard" class="flex flex-col mx-auto bg-white my-8 rounded-md w-[70vw] p-6">
-
-
-        <div id="firstDivisor" >
-            <h1 class="text-xl font-bold font-primary text-left">Dashboard:</h1>
-
+    <div class="container mx-auto p-6">
+        <!-- General Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-lg shadow-md text-center">
+                <h2 class="text-xl font-semibold mb-2">Total Deposits</h2>
+                <p class="text-3xl font-bold text-green-500">${{ total_deposits }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md text-center">
+                <h2 class="text-xl font-semibold mb-2">Total Withdrawals</h2>
+                <p class="text-3xl font-bold text-red-500">${{ total_withdrawals }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md text-center">
+                <h2 class="text-xl font-semibold mb-2">Current Balance</h2>
+                <p class="text-3xl font-bold text-blue-500">${{ current_balance }}</p>
+            </div>
         </div>
 
-        
+        <!-- Weekly Trend -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold text-center mb-4">Weekly Trend</h2>
+            <div class="text-center">
+                <p class="{% if weekly_trend >= 0 %}text-green-500{% else %}text-red-500{% endif %}">{{ weekly_trend }}%</p>
+                <p class="text-sm text-gray-600">Compared to last week</p>
+            </div>
+        </div>
+
+        <!-- Budget Category Chart -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold text-center mb-4">Budget Categories</h2>
+            <canvas id="budgetChart" width="400" height="400"></canvas>
+        </div>
+
+        <!-- At a Glance Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold mb-2">Largest Expense</h2>
+                <p>{{ largest_expense.category }}: ${{ largest_expense.money }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold mb-2">Most Common Category</h2>
+                <p>{{ most_common_category.category }}: {{ most_common_category.total }} times</p>
+            </div>
+            <!-- Additional at-a-glance components can be added here -->
+        </div>
     </div>
-
-    
-
-
-
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Prepare the data for the budget chart
+const graphData = {{ graph_data|safe }};
 
+const ctx = document.getElementById('budgetChart').getContext('2d');
+const budgetChart = new Chart(ctx, {
+    type: 'bar',  // Change the type as needed for your visualization
+    data: {
+        labels: graphData.labels,
+        datasets: [{
+            label: 'Spent',
+            data: graphData.data,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        },
+        {
+            label: 'Limit',
+            data: graphData.limits,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
 {% endblock %}

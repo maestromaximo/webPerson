@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta
 from .utils import classify_transaction_simple, classify_transaction_advanced, update_budget_and_mark_entry
 from django.utils.timezone import make_aware
+from django.db.models import Sum, Avg, Count
 
 def home(request):
     today = datetime.today().date()
@@ -120,10 +121,59 @@ def classification_menu(request):
     return render(request, 'classification_main.html', context)
 
 def dashboard(request):
-    context = {
+    # General stats
+    total_deposits = FieldEntry.objects.filter(type='deposit').aggregate(total=Sum('money'))['total'] or 0
+    total_withdrawals = FieldEntry.objects.filter(type='withdrawal').aggregate(total=Sum('money'))['total'] or 0
+    current_balance = total_deposits - total_withdrawals
+    
+    # Weekly stats
+    today = datetime.today().date()
 
+    # If you only need the date part
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
+    weekly_expenses = weekly_entries.aggregate(total=Sum('money'))['total'] or 0
+    
+    # Trends - Calculate increase or decrease percentage from last week
+    # Trends - Calculate increase or decrease percentage from last week
+    last_week_expenses = FieldEntry.objects.filter(
+        date__range=[start_of_week - timedelta(days=7), start_of_week - timedelta(days=1)]
+    ).aggregate(total=Sum('money'))['total'] or 0
+
+    
+    weekly_trend = ((weekly_expenses - last_week_expenses) / last_week_expenses * 100) if last_week_expenses else 0
+    
+    # Budget stats
+    # Note: Ensure that your Budget model logic to reset weekly limits is properly implemented
+    budget = Budget.objects.first()  # Assuming one main budget
+    categories = budget.categories.all() if budget else []
+    
+    # Prepare data for graph
+    # Here you can prepare data for a JavaScript chart library like Chart.js
+    graph_data = {
+        'labels': [cat.name for cat in categories],
+        'data': [cat.amount_spent for cat in categories],
+        'limits': [cat.weekly_limit for cat in categories],
     }
 
+    # At a glance info, such as largest expense, most common category, etc.
+    # You would need to write custom queries for these, this is just an example
+    largest_expense = weekly_entries.order_by('-money').first()
+    most_common_category = weekly_entries.values('category').annotate(total=Count('category')).order_by('-total').first()
+
+    context = {
+        'total_deposits': total_deposits,
+        'total_withdrawals': total_withdrawals,
+        'current_balance': current_balance,
+        'weekly_expenses': weekly_expenses,
+        'weekly_trend': weekly_trend,
+        'graph_data': graph_data,
+        'budget_categories': categories,
+        'largest_expense': largest_expense,
+        'most_common_category': most_common_category,
+    }
     return render(request, 'dashboard.html', context)
 
 def budget(request):
