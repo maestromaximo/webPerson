@@ -42,8 +42,38 @@
         // Process the scanned barcode
         Quagga.onDetected(function(data) {
             alert("Barcode detected: " + data.codeResult.code);
-            // You can make an AJAX call here to fetch product information
+            onBarcodeDetected(code)
         });
     });
+    
+</script>
+
+<script>
+    function onBarcodeDetected(barcode) {
+    // Perform AJAX request to the server
+    fetch('/health/api/barcode_info/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ 'barcode': barcode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error('Error:', data.error);
+            // Display error message on the page
+        } else {
+            console.log('Product Name:', data.product_name);
+            console.log('Nutritional Info:', data.nutritional_info);
+            // Display product information on the page
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
 </script>
 {% endblock %}
