@@ -40,3 +40,14 @@ def barcode_info(request):
         return JsonResponse(response_data)
     else:
         return JsonResponse({'error': 'Invalid request'}, status=400)
+    
+
+@csrf_exempt
+def confirm_data(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        barcode_data = data.get('data')
+        print("Received data:", barcode_data)  # Console output in Django server
+        return JsonResponse({'message': 'Data received successfully'})
+    else:
+        return JsonResponse({'message': 'Invalid request'}, status=400)
