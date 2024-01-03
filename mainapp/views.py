@@ -1,20 +1,22 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import FieldEntry, Account, Budget, BudgetCategory
+from .models import BudgetLog, FieldEntry, Account, Budget, BudgetCategory
 import json
 from datetime import datetime, timedelta
-from .utils import classify_transaction_simple
+from .utils import classify_transaction_simple, classify_transaction_advanced, update_budget_and_mark_entry
 from django.utils.timezone import make_aware
 
 def home(request):
     today = datetime.today().date()
     start_of_week = today - timedelta(days=today.weekday())
-
+    
+    # print(start_of_week)
     # Categorize transactions from this week
     this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
     for entry in this_week_entries:
-        entry.category = classify_transaction_simple(entry, set_misc=True)
+        entry.category = classify_transaction_simple(entry, set_misc=False)
+        # print(classify_transaction_advanced(entry))
         entry.save()
 
     # Get the current week's Monday's date
@@ -33,7 +35,23 @@ def home(request):
 
     # Check if the budget's start date is older than this week's start date
     if current_budget.start_date < current_week_start:
-        # Reset the budget
+        # Reset the budget save to log
+
+        budget_data = {}
+        for category in BudgetCategory.CATEGORY_CHOICES:
+            category_name = category[0]
+            budget_category = current_budget.categories.get(name=category_name)
+            budget_data[f'{category_name}_limit'] = budget_category.weekly_limit
+            budget_data[f'{category_name}_spent'] = budget_category.amount_spent
+
+        # Create the BudgetLog entry
+        log = BudgetLog.objects.create(
+            start_week=current_budget.start_date,
+            end_week=current_budget.start_date + timedelta(days=7),
+            **budget_data
+        )
+
+
         current_budget.start_date = current_week_start
         current_budget.end_date = current_week_start + timedelta(days=7)
         current_budget.save()
@@ -72,6 +90,21 @@ def classification_menu(request):
         for entry in entries:
             category = classify_transaction_simple(entry)
             entry.category = category
+            entry.save()
+
+
+        today = datetime.today().date()
+        start_of_week = today - timedelta(days=today.weekday()+7)
+        
+        # print(start_of_week)
+        # Categorize transactions from this week
+        this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
+        for entry in this_week_entries:
+            entry.category = classify_transaction_advanced(entry)
+            entry.save()
+        this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
+        for entry in this_week_entries:
+            category = classify_transaction_simple(entry)
             entry.save()
         return redirect('classification_menu')  # Redirect to avoid re-posting on refresh
 
@@ -112,6 +145,32 @@ def budget(request):
         default_budget.save()
 
     budget_categories = default_budget.categories.all()
+
+    entries = FieldEntry.objects.filter(category__isnull=True)
+    for entry in entries:
+        category = classify_transaction_simple(entry)
+        entry.category = category
+        entry.save()
+
+
+    today = datetime.today().date()
+    start_of_week = today - timedelta(days=today.weekday()+7)
+    
+    # print(start_of_week)
+    # Categorize transactions from this week
+    this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
+    for entry in this_week_entries:
+        entry.category = classify_transaction_advanced(entry)
+        entry.save()
+    this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
+    for entry in this_week_entries:
+        category = classify_transaction_simple(entry)
+        entry.save()
+
+    start_of_week = today - timedelta(days=today.weekday())
+    this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True, accounted_for=False)
+    for entry in this_week_entries:
+        update_budget_and_mark_entry(entry)
 
     context = {
         'budget_categories': budget_categories,

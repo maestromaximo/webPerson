@@ -1,10 +1,6 @@
-housing: Rent, mortgage, property taxes, repairs.
-utilities: Electricity, water, gas, internet, phone.
-food: Groceries, dining out.
-transportation: Fuel, public transport, car maintenance.
-insurance: Health, car, home, life insurance.
-healthcare: Medical appointments, medications.
-entertainment: Movies, games, hobbies, personal Entertainment falls into here too like recreational or go out purchases.
-subscriptions: Streaming services, magazines, software.
-savings & Investments: Savings account contributions, stocks, bonds.
-miscellaneous: Expenses that don't fit into other categories.
+Transportation: This category encompasses all expenses related to transport. It includes fuel costs, public transportation fares, taxi fares, ride-sharing services like Uber, vehicle maintenance, and any other costs associated with getting from one place to another.
+Food: This category is for all food-related expenses. It includes solely grocery shopping or food non-takeout related purchases.
+Entertainment: This category covers expenses related to personal enjoyment and leisure activities. This can include movie tickets, recreational activities, hobbies, books, and any other expenses incurred for fun and relaxation.
+Takeout: Specifically focusing on food ordered from outside (different from general 'Food' which includes groceries), this category includes expenses from food delivery services, fast food, and any other form of prepared food that is purchased to consume.
+Supplies: This category encompasses everyday household items and personal care products. It can include toiletries, cleaning supplies, over-the-counter medications, and other miscellaneous items essential for daily living.
+Savings payments and transfers: This one is used for transactions that are just E-transfers or payments from an account to another
