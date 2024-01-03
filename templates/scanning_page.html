@@ -4,26 +4,29 @@
 {% block title %}Barcode Scanner{% endblock %}
 
 {% block content %}
-
 <head>
     <script src="https://unpkg.com/@ericblade/quagga2@latest/dist/quagga.min.js"></script>
-
 </head>
 <div class="container mx-auto mt-10">
-    <h2 class="text-center text-2xl font-bold mb-4">Scan Product Barcode</h2>
-    <div id="scanner-container" class="bg-gray-100 p-4 rounded-lg">
+    <h2 class="text-center text-3xl font-bold mb-6">Scan Product Barcode</h2>
+    <div id="scanner-container" class="bg-gray-200 p-4 rounded-lg shadow-lg">
         <!-- Camera view will be displayed here -->
     </div>
-    <button id="startButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
-        Start Scanning
-    </button>
-
-    <div id="nutrinionalDiv" class="text-lg font-primary font-semibold">
-
-        <p id="modifyText">test</p>
-
+    <div class="flex justify-center mt-4">
+        <button id="startButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Start Scanning
+        </button>
+    </div>
+    <div id="nutrinionalDiv" class="mt-8 p-4 bg-white shadow-lg rounded-lg">
+        <p id="modifyText" class="text-gray-800 text-lg"></p>
+        <div class="flex justify-end mt-4">
+            <button id="confirmButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Confirm
+            </button>
+        </div>
     </div>
 </div>
+
 
 <script>
     function onBarcodeDetected(barcode) {
