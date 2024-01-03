@@ -1,12 +1,48 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import FieldEntry
+from .models import FieldEntry, Account, Budget, BudgetCategory
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from .utils import classify_transaction_simple
+from django.utils.timezone import make_aware
 
 def home(request):
+    today = datetime.today().date()
+    start_of_week = today - timedelta(days=today.weekday())
+
+    # Categorize transactions from this week
+    this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
+    for entry in this_week_entries:
+        entry.category = classify_transaction_simple(entry, set_misc=True)
+        entry.save()
+
+    # Get the current week's Monday's date
+    current_week_start = start_of_week  # Note: This is already a date object
+
+    # Try to get the budget for the current week
+    try:
+        current_budget = Budget.objects.get(name="Default Budget", start_date=current_week_start)
+    except Budget.DoesNotExist:
+        # If not exist, create a new budget
+        current_budget = Budget.objects.create(
+            name="Default Budget",
+            start_date=current_week_start,
+            end_date=current_week_start + timedelta(days=7)
+        )
+
+    # Check if the budget's start date is older than this week's start date
+    if current_budget.start_date < current_week_start:
+        # Reset the budget
+        current_budget.start_date = current_week_start
+        current_budget.end_date = current_week_start + timedelta(days=7)
+        current_budget.save()
+
+        # Reset the amounts spent in each category
+        for category in current_budget.categories.all():
+            category.amount_spent = 0
+            category.save()
+
     return render(request, 'home.html')
 
 @csrf_exempt  # Disable CSRF for this view
@@ -54,5 +90,39 @@ def dashboard(request):
     context = {
 
     }
-    
+
     return render(request, 'dashboard.html', context)
+
+def budget(request):
+    # Ensure default categories exist
+    default_categories = []
+    for choice in BudgetCategory.CATEGORY_CHOICES:
+        category, created = BudgetCategory.objects.get_or_create(name=choice[0])
+        default_categories.append(category)
+
+    # Ensure a default budget exists
+    default_budget, created = Budget.objects.get_or_create(name="Default Budget")
+
+    # If the budget was just created, or if it's missing any categories, add them
+    existing_category_names = set(default_budget.categories.values_list('name', flat=True))
+    missing_categories = [cat for cat in default_categories if cat.name not in existing_category_names]
+
+    if created or missing_categories:
+        default_budget.categories.add(*missing_categories)
+        default_budget.save()
+
+    budget_categories = default_budget.categories.all()
+
+    context = {
+        'budget_categories': budget_categories,
+    }
+    return render(request, 'budgets.html', context)
+
+def update_budget(request):
+    if request.method == 'POST':
+        for category in BudgetCategory.objects.all():
+            new_limit = request.POST.get(f'limit_{category.id}')
+            if new_limit is not None:
+                category.weekly_limit = new_limit
+                category.save()
+    return redirect('budget')

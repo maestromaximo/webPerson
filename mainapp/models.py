@@ -27,6 +27,9 @@ class Account(models.Model):
     total_deposits = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_withdrawals = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    weekly_pay = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    weekly_debt = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     # Additional fields for further statistics can be added here
 
     def update_statistics(self):
@@ -35,6 +38,11 @@ class Account(models.Model):
         self.total_withdrawals = FieldEntry.objects.filter(type='withdrawal').aggregate(Sum('money'))['money__sum'] or 0
         self.current_balance = self.total_deposits - self.total_withdrawals
         self.save()
+
+    def reset_budgets(self):
+        for category in BudgetCategory.objects.all():
+            category.amount_spent = 0
+            category.save()
 
     def __str__(self):
         return f"{self.name} Account: Balance, {self.current_balance}"
@@ -48,7 +56,7 @@ class BudgetCategory(models.Model):
         ('supplies', 'Supplies'),
     ]
 
-    name = models.CharField(max_length=50, choices=CATEGORY_CHOICES, unique=True, null=False)
+    name = models.CharField(max_length=50, choices=CATEGORY_CHOICES, null=False)
     amount_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     weekly_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
