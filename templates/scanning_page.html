@@ -26,42 +26,13 @@
 </div>
 
 <script>
-    document.getElementById('startButton').addEventListener('click', function() {
-        // Initialize QuaggaJS and start the camera
-        Quagga.init({
-            inputStream : {
-                name : "Live",
-                type : "LiveStream",
-                target: document.querySelector('#scanner-container')    
-            },
-            decoder : {
-                readers : ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.error(err);
-                return;
-            }
-            Quagga.start();
-        });
-
-        // Process the scanned barcode
-        Quagga.onDetected(function(data) {
-            alert("Barcode detected: " + data.codeResult.code);
-            onBarcodeDetected(data.codeResult.code)
-        });
-    });
-    
-</script>
-
-<script>
     function onBarcodeDetected(barcode) {
     // Perform AJAX request to the server
     fetch('/health/api/barcode_info/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
+            
         },
         body: JSON.stringify({ 'barcode': barcode })
     })
@@ -95,4 +66,37 @@
 }
 
 </script>
+<script>
+    document.getElementById('startButton').addEventListener('click', function() {
+        // Initialize QuaggaJS and start the camera
+        Quagga.init({
+            inputStream : {
+                name : "Live",
+                type : "LiveStream",
+                target: document.querySelector('#scanner-container')    
+            },
+            decoder : {
+                readers : ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            Quagga.start();
+        });
+
+        // Process the scanned barcode
+        Quagga.onDetected(function(data) {
+            alert("Barcode detected: " + data.codeResult.code);
+            onBarcodeDetected(data.codeResult.code)
+        });
+    });
+    
+
+    //
+    // onBarcodeDetected('0810118170362')
+    //
+</script>
+
 {% endblock %}
