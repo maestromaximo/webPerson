@@ -48,7 +48,7 @@
         // Process the scanned barcode
         Quagga.onDetected(function(data) {
             alert("Barcode detected: " + data.codeResult.code);
-            onBarcodeDetected(code)
+            onBarcodeDetected(data.codeResult.code)
         });
     });
     
