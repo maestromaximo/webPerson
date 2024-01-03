@@ -17,6 +17,12 @@
     <button id="startButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
         Start Scanning
     </button>
+
+    <div id="nutrinionalDiv" class="text-lg font-primary font-semibold">
+
+        <p id="modifyText"></p>
+
+    </div>
 </div>
 
 <script>
@@ -64,14 +70,27 @@
         if (data.error) {
             console.error('Error:', data.error);
             // Display error message on the page
+            document.getElementById('modifyText').innerText = 'Error: ' + data.error;
         } else {
             console.log('Product Name:', data.product_name);
             console.log('Nutritional Info:', data.nutritional_info);
-            // Display product information on the page
+
+            // Construct a string to display
+            let displayText = `Product Name: ${data.product_name}\n`;
+            displayText += 'Nutritional Information:\n';
+
+            // Append nutritional information
+            for (const [key, value] of Object.entries(data.nutritional_info)) {
+                displayText += `${key}: ${value}\n`;
+            }
+
+            // Update the paragraph content
+            document.getElementById('modifyText').innerText = displayText;
         }
     })
     .catch((error) => {
         console.error('Error:', error);
+        document.getElementById('modifyText').innerText = 'Error: ' + error;
     });
 }
 
