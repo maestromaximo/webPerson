@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Barcode Scanner{% endblock %}
+
+{% block content %}
+
+<head>
+    <script src="https://unpkg.com/@ericblade/quagga2@latest/dist/quagga.min.js"></script>
+
+</head>
+<div class="container mx-auto mt-10">
+    <h2 class="text-center text-2xl font-bold mb-4">Scan Product Barcode</h2>
+    <div id="scanner-container" class="bg-gray-100 p-4 rounded-lg">
+        <!-- Camera view will be displayed here -->
+    </div>
+    <button id="startButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
+        Start Scanning
+    </button>
+</div>
+
+<script>
+    document.getElementById('startButton').addEventListener('click', function() {
+        // Initialize QuaggaJS and start the camera
+        Quagga.init({
+            inputStream : {
+                name : "Live",
+                type : "LiveStream",
+                target: document.querySelector('#scanner-container')    
+            },
+            decoder : {
+                readers : ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            Quagga.start();
+        });
+
+        // Process the scanned barcode
+        Quagga.onDetected(function(data) {
+            alert("Barcode detected: " + data.codeResult.code);
+            // You can make an AJAX call here to fetch product information
+        });
+    });
+</script>
+{% endblock %}

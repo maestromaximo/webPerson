@@ -24,6 +24,7 @@
         <div class="hidden md:flex items-center space-x-6">
             <a href="/" class="text-gray-800 hover:text-purple-300">Home</a>
             {% if request.user.is_superuser %}
+            <a href="{% url 'home_food' %}" class="text-gray-800 hover:text-purple-300">Nutrition</a>
             <a href="{% url 'budget' %}" class="text-gray-800 hover:text-purple-300">Budget</a>
             <a href="{% url 'classification_menu' %}" class="text-gray-800 hover:text-purple-300">Classification</a>
             <a href="{% url 'dashboard' %}" class="text-gray-800 hover:text-purple-300">Dashboard</a>
@@ -45,6 +46,7 @@
     <div class="md:hidden absolute w-full hidden transition-opacity duration-300 opacity-0" id="mobile-menu">
         <a href="/" class="text-gray-800 hover:text-purple-300">Home</a>
             {% if request.user.is_superuser %}
+            <a href="{% url 'home_food' %}" class="text-gray-800 hover:text-purple-300">Nutrition</a>
             <a href="{% url 'budget' %}" class="text-gray-800 hover:text-purple-300">Budget</a>
             <a href="{% url 'classification_menu' %}" class="text-gray-800 hover:text-purple-300">Classification</a>
             <a href="{% url 'dashboard' %}" class="text-gray-800 hover:text-purple-300">Dashboard</a>

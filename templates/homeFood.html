@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Alejandro Garcia Polo - Nutrition{% endblock %}
+
+{% block content %}
+<div id="mainBackground" class="flex flex-col justify-center w-full h-full">
+    <div id="mainCard" class="flex flex-col mx-auto bg-white my-8 rounded-md w-[70vw] p-6 shadow-lg">
+        <h1 class="text-2xl font-bold font-primary text-left mb-4">Welcome to the Nutrition App:</h1>
+        <!-- Button to navigate to the barcode scanning page -->
+        <a href="{% url 'barcode_scanning' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Scan Product Barcode
+        </a>
+    </div>
+</div>
+{% endblock %}
