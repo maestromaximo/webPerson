@@ -1,0 +1,10 @@
+housing: Rent, mortgage, property taxes, repairs.
+utilities: Electricity, water, gas, internet, phone.
+food: Groceries, dining out.
+transportation: Fuel, public transport, car maintenance.
+insurance: Health, car, home, life insurance.
+healthcare: Medical appointments, medications.
+entertainment: Movies, games, hobbies, personal Entertainment falls into here too like recreational or go out purchases.
+subscriptions: Streaming services, magazines, software.
+savings & Investments: Savings account contributions, stocks, bonds.
+miscellaneous: Expenses that don't fit into other categories.

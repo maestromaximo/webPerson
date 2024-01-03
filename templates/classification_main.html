@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Alejandro Garcia Polo - Home{% endblock %}
+
+{% block content %}
+
+<div id="mainBackground" class="flex flex-col justify-center w-full h-full">
+
+    <div id="mainCard" class="flex flex-col mx-auto bg-white my-8 rounded-md w-[70vw] p-6">
+
+
+        <div id="firstDivisor" >
+            <h1 class="text-xl font-bold font-primary text-left">Classification page:</h1>
+
+        </div>
+
+        <div id="infoSquare" class="border border-black bg-gray-100 m-2 p-2 justify-between font-primary flex flex-row">
+            <h3>Number of transactions: {{ total_field_entries }}</h3>
+            <h3>With category: {{ total_categorized }}</h3>
+            <h3>Without category: {{ total_uncategorized }}</h3>
+        </div>
+        
+        <div id="actionSection" class="border-t border-black mt-4 pt-2">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 font-secondary bg-primary text-white rounded">Classify Transactions</button>
+            </form>
+        </div>
+    </div>
+
+    
+
+
+
+</div>
+
+
+{% endblock %}

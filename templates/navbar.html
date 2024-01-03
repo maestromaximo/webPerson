@@ -23,10 +23,10 @@
         <!-- Primary Navigation -->
         <div class="hidden md:flex items-center space-x-6">
             <a href="/" class="text-gray-800 hover:text-purple-300">Home</a>
-            <a href="/api" class="text-gray-800 hover:text-purple-300">API</a>
-            <a href="/place" class="text-gray-800 hover:text-purple-300">Place</a>
-            <a href="/holder" class="text-gray-800 hover:text-purple-300">Holder</a>
             {% if request.user.is_superuser %}
+            <a href="/api" class="text-gray-800 hover:text-purple-300">API</a>
+            <a href="{% url 'classification_menu' %}" class="text-gray-800 hover:text-purple-300">Classification</a>
+            <a href="{% url 'dashboard' %}" class="text-gray-800 hover:text-purple-300">Dashboard</a>
                 <a href="/admin" class="text-gray-800 hover:text-purple-300">Admin</a>
             {% endif %}
         </div>
@@ -43,13 +43,13 @@
 
     <!-- Mobile Menu -->
     <div class="md:hidden absolute w-full hidden transition-opacity duration-300 opacity-0" id="mobile-menu">
-        <a href="/" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Home</a>
-        <a href="/api" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">API</a>
-        <a href="/place" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Place</a>
-        <a href="/holder" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Holder</a>
-        {% if request.user.is_superuser %}
-            <a href="/admin" class="block text-sm px-2 py-4 text-gray-800 hover:bg-gray-100">Admin</a>
-        {% endif %}
+        <a href="/" class="text-gray-800 hover:text-purple-300">Home</a>
+            {% if request.user.is_superuser %}
+            <a href="/api" class="text-gray-800 hover:text-purple-300">API</a>
+            <a href="{% url 'classification_menu' %}" class="text-gray-800 hover:text-purple-300">Classification</a>
+            <a href="{% url 'dashboard' %}" class="text-gray-800 hover:text-purple-300">Dashboard</a>
+                <a href="/admin" class="text-gray-800 hover:text-purple-300">Admin</a>
+            {% endif %}
     </div>
 </nav>
 
