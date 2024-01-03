@@ -168,7 +168,8 @@ def budget(request):
         entry.save()
 
     start_of_week = today - timedelta(days=today.weekday())
-    this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True, accounted_for=False)
+    print('THE START HERE:', start_of_week)
+    this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=False, accounted_for=False)
     for entry in this_week_entries:
         update_budget_and_mark_entry(entry)
 

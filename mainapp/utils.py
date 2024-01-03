@@ -118,10 +118,10 @@ Savings payments and transfers: This one is used for transactions that are just 
     
 def update_budget_and_mark_entry(entry: FieldEntry):
    
-
+    print('THE ENTRYY', entry)
     if entry.accounted_for == False:
         try:
-            budget_category = BudgetCategory.objects.get(name=entry.category)
+            budget_category = BudgetCategory.objects.filter(name__icontains=entry.category).first()
             budget_category.amount_spent += entry.money
             budget_category.save()
 
