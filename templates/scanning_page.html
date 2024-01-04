@@ -39,6 +39,7 @@
 
 
 <script>
+    let latestData = {};
     function onBarcodeDetected(barcode) {
     // Perform AJAX request to the server
     fetch('/health/api/barcode_info/', {
@@ -62,7 +63,7 @@
             // Construct a string to display
             let displayText = `Product Name: ${data.product_name}\n`;
             displayText += 'Nutritional Information:\n';
-
+            latestData = data;
             // Append nutritional information
             for (const [key, value] of Object.entries(data.nutritional_info)) {
                 displayText += `${key}: ${value}\n`;
@@ -115,23 +116,24 @@
 <script>
     document.getElementById('confirmButton').addEventListener('click', function() {
     const barcodeData = document.getElementById('modifyText').innerText;
-    // Perform AJAX request to send data to Django
     fetch('/health/api/barcode_info/confirm_data/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-           
         },
-        body: JSON.stringify({ 'data': barcodeData })
+        body: JSON.stringify(latestData)
     })
     .then(response => response.json())
     .then(data => {
         console.log('Response:', data.message);
+        // Redirect to the modification page upon success
+        window.location.href = '/health/food_modification/';
     })
     .catch((error) => {
         console.error('Error:', error);
     });
 });
+
 
 </script>
 

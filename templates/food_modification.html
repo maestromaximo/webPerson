@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Food Modification{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-10">
+    <h2 class="text-center text-3xl font-bold mb-6">Modify Food Item</h2>
+    <form method="POST"  enctype="multipart/form-data"> <!--action="/health/api/modify_food/"-->
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="name" class="block text-sm font-medium text-gray-700">Name:</label>
+            <input type="text" id="name" name="name" value="{{ food_item.name }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required>
+        </div>
+        
+        <div class="mb-4">
+            <label for="image" class="block text-sm font-medium text-gray-700">Image:</label>
+            <input type="file" id="image" name="image" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+
+        
+
+        <div class="mb-4">
+            <label for="expiration_date" class="block text-sm font-medium text-gray-700">Expiration Date:</label>
+            <input type="date" id="expiration_date" name="expiration_date" value="{{ food_item.expiration_date }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+
+        <div class="mb-4">
+            <label for="weight" class="block text-sm font-medium text-gray-700">Weight (g):</label>
+            <input type="number" id="weight" name="weight" value="{{ food_item.weight }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+
+        <div class="mb-4">
+            <label for="quantity_per_package" class="block text-sm font-medium text-gray-700">Quantity per Package:</label>
+            <input type="number" id="quantity_per_package" name="quantity_per_package" value="{{ food_item.quantity_per_package }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+
+        <div class="mb-4">
+            <label for="calories" class="block text-sm font-medium text-gray-700">Calories:</label>
+            <input type="number" step="0.01" id="calories" name="calories" value="{{ food_item.calories }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+
+
+
+        <div class="mb-4">
+            <label for="fat" class="block text-sm font-medium text-gray-700">Fat (g):</label>
+            <input type="number" step="0.01" id="fat" name="fat" value="{{ food_item.fat }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+        
+        <div class="mb-4">
+            <label for="protein" class="block text-sm font-medium text-gray-700">Protein (g):</label>
+            <input type="number" step="0.01" id="protein" name="protein" value="{{ food_item.protein }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+        
+        <div class="mb-4">
+            <label for="carbohydrates" class="block text-sm font-medium text-gray-700">Carbohydrates (g):</label>
+            <input type="number" step="0.01" id="carbohydrates" name="carbohydrates" value="{{ food_item.carbohydrates }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+        
+        <div class="mb-4">
+            <label for="sugars" class="block text-sm font-medium text-gray-700">Sugars (g):</label>
+            <input type="number" step="0.01" id="sugars" name="sugars" value="{{ food_item.sugars }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+        
+        <div class="mb-4">
+            <label for="sodium" class="block text-sm font-medium text-gray-700">Sodium (mg):</label>
+            <input type="number" step="0.01" id="sodium" name="sodium" value="{{ food_item.sodium }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+        </div>
+        
+
+        <!-- Repeat for other nutritional fields -->
+        <!-- fat, protein, carbohydrates, sugars, sodium -->
+
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Confirm Changes
+        </button>
+
+
+        
+        <div class="mb-4">
+            <label for="nutritional_values" class="block text-sm font-medium text-gray-700">Nutritional Values:</label>
+            <textarea id="nutritional_values" name="nutritional_values" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">{{ food_item.nutritional_values }}</textarea>
+        </div>
+    </form>
+</div>
+{% endblock %}
