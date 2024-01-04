@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Meal Details{% endblock %}
+
+{% block content %}
+<div class="container mx-auto my-8">
+    <h2 class="text-2xl font-semibold mb-4">{{ meal.name }}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="col-span-1">
+            <h3 class="text-lg font-semibold">Ingredients</h3>
+            <ul>
+                {% for item in meal.food_items.all %}
+                    <li>{{ item.name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-span-2">
+            <h3 class="text-lg font-semibold">Recipe</h3>
+            <p>{{ meal.recipe }}</p>
+        </div>
+    </div>
+    <div class="mt-6">
+        <h3 class="text-lg font-semibold">Nutritional Information</h3>
+        <p>Calories: {{ meal.total_calories }}</p>
+        <p>Fat: {{ meal.total_fat }}</p>
+        <p>Protein: {{ meal.total_protein }}</p>
+        <p>Carbohydrates: {{ meal.total_carbohydrates }}</p>
+        <p>Sugars: {{ meal.total_sugars }}</p>
+        <p>Sodium: {{ meal.total_sodium }}</p>
+    </div>
+</div>
+{% endblock %}

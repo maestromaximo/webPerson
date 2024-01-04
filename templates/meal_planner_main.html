@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load custom_filters %}
+{% load custom_tags %}
 
 {% block title %}Alejandro Garcia Polo - Meal Planner{% endblock %}
 
@@ -12,19 +12,19 @@
         <!-- Weekly Planner -->
         <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
             {% for day in week_days %}
-            <div class="border border-gray-200 rounded-lg p-4">
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-300">
                 <h3 class="text-lg font-semibold mb-3">{{ day|date:"F j, Y" }}</h3>
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="this.classList.toggle('bg-green-500')">Consumed</button>
-                <!-- Display meal plan for the day -->
-                {% if meals_by_day.day %}
-                    <p class="mt-4">{{ meals_by_day.day.name }}</p>
-                    <p>{{ meals_by_day.day.recipe }}</p>
-                {% else %}
-                    <p class="mt-4">No meal planned</p>
-                {% endif %}
+                {% with meal=meals_by_day|get_item:day %}
+                    {% if meal %}
+                        <a href="{% url 'meal_detail' day=day %}" class="text-blue-500 hover:text-blue-700 font-medium">{{ meal.name }}</a>
+                    {% else %}
+                        <p class="mt-4">No meal planned</p>
+                    {% endif %}
+                {% endwith %}
             </div>
             {% endfor %}
         </div>
+
 
 
         <!-- Weekly Nutrition Stats -->

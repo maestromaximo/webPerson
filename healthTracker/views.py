@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json, requests
@@ -125,7 +125,7 @@ def food_modification(request):
     
 def main_meal_planner(request):
     # Determine the current week
-    today = datetime.today()
+    today = datetime.today().date()  # Ensure this is a date object
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
     week_days = [start_of_week + timedelta(days=i) for i in range(7)]
@@ -144,6 +144,7 @@ def main_meal_planner(request):
         available_items_str = ', '.join([item.name for item in available_food_items])
 
         for day in week_days:
+            print(available_items_str)
             recipe, meal_name = meal_recipe_creator(available_items_str)
             meal = Meal.objects.create(name=meal_name, date=day, recipe=recipe)
             for item in available_food_items:
@@ -163,6 +164,7 @@ def main_meal_planner(request):
     }
 
     # Context for the template
+    print(meals_by_day)
     context = {
         'week_days': week_days,
         'meals_by_day': meals_by_day,
@@ -170,3 +172,13 @@ def main_meal_planner(request):
     }
 
     return render(request, 'meal_planner_main.html', context)
+
+def meal_detail(request, day):
+    # Convert the day string to a date object
+    meal_date = datetime.strptime(day, '%Y-%m-%d').date()
+    meal = get_object_or_404(Meal, date=meal_date)
+
+    context = {
+        'meal': meal,
+    }
+    return render(request, 'meal_detail.html', context)

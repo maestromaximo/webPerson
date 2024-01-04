@@ -52,8 +52,9 @@ def meal_recipe_creator(food_items, model="gpt-3.5-turbo-0613"):
         "Content-Type": "application/json",
         "Authorization": "Bearer " + api_key,
     }
-    prompt = f"Please provide a healthy and great recipes and meals given the following items avalible to you. YOU MUST INCLUDE FULL INSTRUCTIONS, and if followed the user would be able to recreate the meal, this is food for lunch. Here are the items: \n {food_items}"
-    messages = [{"system": "You are a recipe creator machine, you will always create accurate, tasty, and easy to follow, recepies given the avalible items."},
+    prompt = f"Please provide a healthy and great recipes and meals given the following items avalible to you. YOU MUST INCLUDE FULL INSTRUCTIONS, and if followed the user would be able to recreate the meal, this is food for lunch. Here are the items, YOU MUST USE \"\\n\" WHEN YOU WANT TO ADD A LINE SPACE: \n {food_items}"
+    # prompt = f"Please provide a healthy and great recipes and meals given the following items avalible to you. YOU MUST INCLUDE FULL INSTRUCTIONS, and if followed the user would be able to recreate the meal, this is food for lunch. Here are the items: \n {food_items}"
+    messages = [{"role": "system", "content": "You are a recipe creator machine, you will always create accurate, tasty, and easy to follow, recepies given the avalible items."},
                 {"role": "user", "content": prompt}]
     
 
