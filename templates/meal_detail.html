@@ -2,11 +2,11 @@
 {% block title %}Meal Details{% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 shadow-lg rounded-lg mx-auto my-8 max-w-4xl">
+<div class="bg-white p-8 shadow-lg rounded-lg mx-auto my-8 max-w-[64vw]">
     <h2 class="text-2xl font-semibold mb-4">{{ meal.name }}</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="col-span-1">
-            <h3 class="text-lg font-semibold">Ingredients</h3>
+            <h3 class="text-lg font-semibold pb-4">Ingredients</h3>
             <ul>
                 {% for item in meal.food_items.all %}
                     <li>{{ item.name }}</li>
@@ -14,8 +14,8 @@
             </ul>
         </div>
         <div class="col-span-2">
-            <h3 class="text-lg font-semibold">Recipe</h3>
-            <p>{{ meal.recipe }}</p>
+            <h3 class="text-lg font-semibold pb-4">Recipe</h3>
+            <p class="text-justify">{{ meal.recipe }}</p>
         </div>
     </div>
     <div class="mt-6">
