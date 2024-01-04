@@ -3,7 +3,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json, requests
 from datetime import datetime, timedelta
-from .models import FoodItem
+from .models import FoodItem, Meal
+from .utils import meal_recipe_creator
+import os
 
 def home(request):
     
