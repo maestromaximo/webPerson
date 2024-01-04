@@ -79,7 +79,7 @@ def confirm_data(request):
         return JsonResponse({'error': 'Invalid request'}, status=400)
     
 
-csrf_exempt
+
 def food_modification(request):
     if request.method == 'POST':
         # Parsing form data
@@ -114,7 +114,7 @@ def food_modification(request):
             }
         )
 
-        return redirect('scanning_page')  # Redirect to the scanning page
+        return redirect('barcode_scanning')  # Redirect to the scanning page
 
     else:
         # Display the form for the most recent FoodItem
