@@ -120,3 +120,18 @@ def food_modification(request):
         # Display the form for the most recent FoodItem
         food_item = FoodItem.objects.last()  # Get the most recent FoodItem
         return render(request, 'food_modification.html', {'food_item': food_item})
+    
+def main_meal_planner(request):
+    today = datetime.today()
+    start_of_week = today - timedelta(days=today.weekday())  # Monday
+    end_of_week = start_of_week + timedelta(days=6)  # Sunday
+
+    # Fetch available food items
+    # Note: Adjust the filter logic based on how you determine the availability
+    available_food_items = FoodItem.objects.filter(purchased_date__gte=start_of_week, expiration_date__lte=end_of_week)
+
+    context = {
+        'week_days': [start_of_week + timedelta(days=i) for i in range(7)],
+        'available_food_items': available_food_items,
+    }
+    return render(request, 'meal_planner_main.html', context)
