@@ -13,26 +13,33 @@
         <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
             {% for day in week_days %}
             <div class="border border-gray-200 rounded-lg p-4">
-                <h3 class="text-lg font-semibold mb-3">{{ day }}</h3>
+                <h3 class="text-lg font-semibold mb-3">{{ day|date:"F j, Y" }}</h3>
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="this.classList.toggle('bg-green-500')">Consumed</button>
-                <!-- Placeholder for meal items -->
-                <p class="mt-4">Your meal plan...</p>
+                <!-- Display meal plan for the day -->
+                {% if meals_by_day.day %}
+                    <p class="mt-4">{{ meals_by_day.day.name }}</p>
+                    <p>{{ meals_by_day.day.recipe }}</p>
+                {% else %}
+                    <p class="mt-4">No meal planned</p>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
+
 
         <!-- Weekly Nutrition Stats -->
         <div class="border border-gray-200 rounded-lg p-4 mb-8">
             <h3 class="text-lg font-semibold mb-3">Weekly Nutrition Stats</h3>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div>Calories: <span>...</span></div>
-                <div>Fat: <span>...</span></div>
-                <div>Protein: <span>...</span></div>
-                <div>Carbs: <span>...</span></div>
-                <div>Sugars: <span>...</span></div>
-                <div>Sodium: <span>...</span></div>
+                <div>Calories: <span>{{ weekly_nutrition.total_calories }}</span></div>
+                <div>Fat: <span>{{ weekly_nutrition.total_fat }}</span></div>
+                <div>Protein: <span>{{ weekly_nutrition.total_protein }}</span></div>
+                <div>Carbs: <span>{{ weekly_nutrition.total_carbohydrates }}</span></div>
+                <div>Sugars: <span>{{ weekly_nutrition.total_sugars }}</span></div>
+                <div>Sodium: <span>{{ weekly_nutrition.total_sodium }}</span></div>
             </div>
         </div>
+
 
         <!-- Check if items are done -->
         <div class="border border-gray-200 rounded-lg p-4">

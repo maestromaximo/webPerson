@@ -124,16 +124,49 @@ def food_modification(request):
         return render(request, 'food_modification.html', {'food_item': food_item})
     
 def main_meal_planner(request):
+    # Determine the current week
     today = datetime.today()
-    start_of_week = today - timedelta(days=today.weekday())  # Monday
-    end_of_week = start_of_week + timedelta(days=6)  # Sunday
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    week_days = [start_of_week + timedelta(days=i) for i in range(7)]
 
-    # Fetch available food items
-    # Note: Adjust the filter logic based on how you determine the availability
-    available_food_items = FoodItem.objects.filter(purchased_date__gte=start_of_week, expiration_date__lte=end_of_week)
+    # Check if meals for the week already exist
+    existing_meals = Meal.objects.filter(date__range=[start_of_week, end_of_week])
+    meals_by_day = {day: None for day in week_days}
 
-    context = {
-        'week_days': [start_of_week + timedelta(days=i) for i in range(7)],
-        'available_food_items': available_food_items,
+    if existing_meals.exists():
+        for meal in existing_meals:
+            meals_by_day[meal.date] = meal
+    else:
+        # Delete existing meals and create new ones
+        existing_meals.delete()
+        available_food_items = FoodItem.objects.filter(purchased_date__gte=start_of_week, expiration_date__lte=end_of_week)
+        available_items_str = ', '.join([item.name for item in available_food_items])
+
+        for day in week_days:
+            recipe, meal_name = meal_recipe_creator(available_items_str)
+            meal = Meal.objects.create(name=meal_name, date=day, recipe=recipe)
+            for item in available_food_items:
+                if item.name in recipe:
+                    meal.food_items.add(item)
+            meal.calculate_totals()
+            meals_by_day[day] = meal
+
+    # Weekly Nutrition Stats
+    weekly_nutrition = {
+        'total_calories': sum(meal.total_calories for meal in meals_by_day.values() if meal),
+        'total_fat': sum(meal.total_fat for meal in meals_by_day.values() if meal),
+        'total_protein': sum(meal.total_protein for meal in meals_by_day.values() if meal),
+        'total_carbohydrates': sum(meal.total_carbohydrates for meal in meals_by_day.values() if meal),
+        'total_sugars': sum(meal.total_sugars for meal in meals_by_day.values() if meal),
+        'total_sodium': sum(meal.total_sodium for meal in meals_by_day.values() if meal),
     }
+
+    # Context for the template
+    context = {
+        'week_days': week_days,
+        'meals_by_day': meals_by_day,
+        'weekly_nutrition': weekly_nutrition,
+    }
+
     return render(request, 'meal_planner_main.html', context)

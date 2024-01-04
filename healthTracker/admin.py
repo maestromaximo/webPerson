@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import FoodItem
+from .models import FoodItem, Meal
 
 
 @admin.register(FoodItem)
@@ -19,3 +19,26 @@ class FoodItemAdmin(admin.ModelAdmin):
             'fields': ('calories', 'fat', 'protein', 'carbohydrates', 'sugars', 'sodium')
         }),
     )
+
+@admin.register(Meal)
+class MealAdmin(admin.ModelAdmin):
+    list_display = ('name', 'date', 'total_calories', 'total_fat', 'total_protein', 'total_carbohydrates', 'total_sugars', 'total_sodium')
+    list_filter = ('date', 'total_calories', 'total_fat', 'total_protein', 'total_carbohydrates', 'total_sugars', 'total_sodium')
+    search_fields = ('name',)
+    date_hierarchy = 'date'
+    ordering = ('-date',)
+
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'date', 'recipe')
+        }),
+        ('Nutritional Totals', {
+            'fields': ('total_calories', 'total_fat', 'total_protein', 'total_carbohydrates', 'total_sugars', 'total_sodium')
+        }),
+        ('Associated Food Items', {
+            'fields': ('food_items',),
+            'description': 'Select food items that make up this meal.'
+        }),
+    )
+
+    filter_horizontal = ('food_items',)  # For easier selection of multiple food items
