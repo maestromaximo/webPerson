@@ -14,22 +14,19 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for category in budget_categories %}
-                <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h2 class="font-semibold text-lg">{{ category.name }}</h2>
-                    <p class="text-sm text-gray-600">Spent: <span class="font-semibold">${{ category.amount_spent }}</span></p>
-                    <label for="limit_{{category.id}}" class="text-sm text-gray-600">Limit:</label>
-                    <input type="number" name="limit_{{category.id}}" id="limit_{{category.id}}" class="w-full mb-2 p-1 border border-gray-300 rounded" value="{{ category.weekly_limit }}" min="0">
-                    <div class="mt-2">
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            {% with category.amount_spent|percentage_of:category.weekly_limit as percent %}
-                                <div class="h-2.5 rounded-full" style="width: {{ percent }}%"
-                                    class="{% if percent <= 50 %}bg-blue-600{% elif percent <= 75 %}bg-orange-500{% else %}bg-red-600{% endif %}">
-                                </div>
-                            {% endwith %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+<div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+    <h2 class="font-semibold text-lg">{{ category.name }}</h2>
+    <p class="text-sm text-gray-600">Spent: <span class="font-semibold">${{ category.amount_spent }}</span></p>
+    <label for="limit_{{category.id}}" class="text-sm text-gray-600">Limit:</label>
+    <input type="number" name="limit_{{category.id}}" id="limit_{{category.id}}" class="w-full mb-2 p-1 border border-gray-300 rounded" value="{{ category.weekly_limit }}" min="0">
+    <div class="mt-2">
+        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+            <div class="h-2.5 rounded-full {{ category.bar_color }}" style="width: {{ category.amount_spent|percentage_of:category.weekly_limit }}%"></div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 
             </div>
             <button type="submit" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">

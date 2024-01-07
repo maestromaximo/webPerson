@@ -62,6 +62,7 @@ class BudgetCategory(models.Model):
     weekly_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+    bar_color = models.CharField(max_length=50, default="bg-blue-600")
 
     def __str__(self):
         return f"{self.get_name_display()} - Weekly Limit: {self.weekly_limit}"

@@ -200,6 +200,7 @@ def budget(request):
 
     budget_categories = default_budget.categories.all()
 
+    # Categorize transactions that are not yet categorized
     entries = FieldEntry.objects.filter(category__isnull=True)
     for entry in entries:
         category = classify_transaction_simple(entry)
@@ -254,7 +255,14 @@ def budget(request):
 
             recipient_category.save()
         category.save()
-
+    for category in budget_categories:
+        percent = (category.amount_spent / category.weekly_limit * 100) if category.weekly_limit else 0
+        if percent <= 50:
+            category.bar_color = 'bg-blue-600'
+        elif percent <= 75:
+            category.bar_color = 'bg-orange-500'
+        else:
+            category.bar_color = 'bg-red-600'
     context = {
         'budget_categories': budget_categories,
     }
