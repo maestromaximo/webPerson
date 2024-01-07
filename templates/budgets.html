@@ -21,11 +21,16 @@
                     <input type="number" name="limit_{{category.id}}" id="limit_{{category.id}}" class="w-full mb-2 p-1 border border-gray-300 rounded" value="{{ category.weekly_limit }}" min="0">
                     <div class="mt-2">
                         <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ category.amount_spent|percentage_of:category.weekly_limit }}%"></div>
+                            {% with category.amount_spent|percentage_of:category.weekly_limit as percent %}
+                                <div class="h-2.5 rounded-full" style="width: {{ percent }}%"
+                                    class="{% if percent <= 50 %}bg-blue-600{% elif percent <= 75 %}bg-orange-500{% else %}bg-red-600{% endif %}">
+                                </div>
+                            {% endwith %}
                         </div>
                     </div>
                 </div>
                 {% endfor %}
+
             </div>
             <button type="submit" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                 Update Limits
