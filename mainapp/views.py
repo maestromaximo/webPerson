@@ -181,6 +181,20 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 def budget(request):
+    """
+    View function that handles the budget page.
+
+    This function ensures the existence of default categories and a default budget.
+    It categorizes transactions that are not yet categorized and transactions from the current week.
+    It also handles overspending by redistributing the excess amount to eligible categories.
+    Finally, it calculates the percentage of budget spent for each category and assigns a color to the category bar.
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - A rendered HTML template with the budget categories and their corresponding information.
+    """
     # Ensure default categories exist
     default_categories = []
     for choice in BudgetCategory.CATEGORY_CHOICES:
@@ -207,11 +221,9 @@ def budget(request):
         entry.category = category
         entry.save()
 
-
     today = datetime.today().date()
     start_of_week = today - timedelta(days=today.weekday()+7)
-    
-    # print(start_of_week)
+
     # Categorize transactions from this week
     this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=True)
     for entry in this_week_entries:
@@ -241,7 +253,6 @@ def budget(request):
             eligible_categories_list = list(eligible_categories)
             if eligible_categories_list:
                 recipient_category = random.choice(eligible_categories_list)
-            # recipient_category = choice(eligible_categories)
 
             available_space = recipient_category.weekly_limit - recipient_category.amount_spent
             redistribution_amount = min(overspent_amount, available_space)
