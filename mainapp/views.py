@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from .utils import classify_transaction_simple, classify_transaction_advanced, update_budget_and_mark_entry
 from django.utils.timezone import make_aware
 from django.db.models import Sum, Avg, Count
+from random import choice
+from django.db.models import F
+
 
 def home(request):
     today = datetime.today().date()
@@ -222,6 +225,31 @@ def budget(request):
     this_week_entries = FieldEntry.objects.filter(date__gte=start_of_week, category__isnull=False, accounted_for=False)
     for entry in this_week_entries:
         update_budget_and_mark_entry(entry)
+
+    budget_categories = default_budget.categories.all()
+    overspent_categories = budget_categories.filter(amount_spent__gt=F('weekly_limit'))
+    eligible_categories = budget_categories.filter(amount_spent__lt=F('weekly_limit'))
+
+    for category in overspent_categories:
+        overspent_amount = category.amount_spent - category.weekly_limit
+        category.amount_spent = category.weekly_limit  # Reset to the limit
+
+        while overspent_amount > 0 and eligible_categories.exists():
+            # Choose a random eligible category for redistribution
+            recipient_category = choice(eligible_categories)
+
+            available_space = recipient_category.weekly_limit - recipient_category.amount_spent
+            redistribution_amount = min(overspent_amount, available_space)
+
+            recipient_category.amount_spent += redistribution_amount
+            overspent_amount -= redistribution_amount
+
+            # Update the eligible categories if the recipient is now full
+            if recipient_category.amount_spent >= recipient_category.weekly_limit:
+                eligible_categories = eligible_categories.exclude(id=recipient_category.id)
+
+            recipient_category.save()
+        category.save()
 
     context = {
         'budget_categories': budget_categories,
