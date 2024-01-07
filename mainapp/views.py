@@ -8,6 +8,7 @@ from .utils import classify_transaction_simple, classify_transaction_advanced, u
 from django.utils.timezone import make_aware
 from django.db.models import Sum, Avg, Count
 from random import choice
+import random
 from django.db.models import F
 
 
@@ -236,7 +237,10 @@ def budget(request):
 
         while overspent_amount > 0 and eligible_categories.exists():
             # Choose a random eligible category for redistribution
-            recipient_category = choice(eligible_categories)
+            eligible_categories_list = list(eligible_categories)
+            if eligible_categories_list:
+                recipient_category = random.choice(eligible_categories_list)
+            # recipient_category = choice(eligible_categories)
 
             available_space = recipient_category.weekly_limit - recipient_category.amount_spent
             redistribution_amount = min(overspent_amount, available_space)
