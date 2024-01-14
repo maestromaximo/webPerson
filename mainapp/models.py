@@ -76,7 +76,10 @@ class Budget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
-
+    def reset_weekly_budget(self):
+        for category in self.categories.all():
+            category.amount_spent = 0
+            category.save()
 
     def __str__(self):
         return f"Budget: {self.name} ({self.start_date} to {self.end_date})"
