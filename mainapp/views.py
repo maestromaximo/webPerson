@@ -10,6 +10,7 @@ from django.db.models import Sum, Avg, Count
 from random import choice
 import random
 from django.db.models import F
+import random
 
 
 def home(request):
@@ -33,7 +34,7 @@ def home(request):
     except Budget.DoesNotExist:
         # If not exist, create a new budget
         current_budget = Budget.objects.create(
-            name="Default Budget",
+            name="Default Budget" + str(random.randint(1, 1000)),
             start_date=current_week_start,
             end_date=current_week_start + timedelta(days=7)
         )
@@ -59,6 +60,7 @@ def home(request):
 
         current_budget.start_date = current_week_start
         current_budget.end_date = current_week_start + timedelta(days=7)
+        current_budget.reset_weekly_budget()
         current_budget.save()
 
         # Reset the amounts spent in each category
