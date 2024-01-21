@@ -76,11 +76,30 @@ def purchase_made_endpoint(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body.decode('utf-8'))
+            date = datetime.strptime(data['date'], "%Y-%m-%d").date()
+            time = datetime.strptime(data['time'], "%H:%M:%S").time()
+            message = data['message']
+            money = data['amount']
+
+            # Check if an entry with the same data already exists
+            existing_entry = FieldEntry.objects.filter(
+                date=date,
+                time=time,
+                message=message,
+                money=money
+            ).first()
+
+            if existing_entry:
+                # Log a message to the console
+                print(f"Entry already exists for {date}")
+                return JsonResponse({'status': 'error', 'message': 'Entry already exists'})
+
+            # If no existing entry, create a new one
             entry = FieldEntry.objects.create(
-                date=datetime.strptime(data['date'], "%Y-%m-%d").date(),
-                time=datetime.strptime(data['time'], "%H:%M:%S").time(),
-                message=data['message'],
-                money=data['amount'],
+                date=date,
+                time=time,
+                message=message,
+                money=money,
                 read_status=False 
             )
             entry.save()
