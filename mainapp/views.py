@@ -11,6 +11,7 @@ from random import choice
 import random
 from django.db.models import F
 import random
+from django.contrib.auth.decorators import login_required
 
 
 def home(request):
@@ -90,7 +91,7 @@ def purchase_made_endpoint(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed.'})
     
-
+@login_required
 def classification_menu(request):
     if request.method == 'POST':
         entries = FieldEntry.objects.filter(category__isnull=True)
@@ -126,6 +127,7 @@ def classification_menu(request):
     }
     return render(request, 'classification_main.html', context)
 
+@login_required
 def dashboard(request):
     # General stats
     total_deposits = FieldEntry.objects.filter(type='deposit').aggregate(total=Sum('money'))['total'] or 0
@@ -182,6 +184,7 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
+@login_required
 def budget(request):
     """
     View function that handles the budget page.
@@ -281,6 +284,7 @@ def budget(request):
     }
     return render(request, 'budgets.html', context)
 
+@login_required
 def update_budget(request):
     if request.method == 'POST':
         for category in BudgetCategory.objects.all():
