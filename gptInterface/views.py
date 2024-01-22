@@ -10,7 +10,7 @@ import os
 load_dotenv()
 openai_key=os.getenv("OPENAI_API_KEY")
 # print(openai_key)
-# set_openai_api_key(api_key=openai_key)
+set_openai_api_key(api_key=openai_key)
 # To save current module's functions
 manage_available_functions(retrieve=False)
 
