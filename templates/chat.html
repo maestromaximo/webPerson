@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Alejandro Garcia Polo - GPT models{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center py-12">
+    <div class="w-full max-w-md">
+        <div class="bg-white shadow-lg rounded-lg p-6" id="chatContainer">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold">Chat with GPT</h2>
+                <button id="themeToggle" class="bg-gray-200 p-2 rounded-full">
+                    <span class="sr-only">Toggle dark/light mode</span>
+                    <svg id="themeIcon" class="h-6 w-6 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <!-- Icons will be swapped via JS -->
+                    </svg>
+                </button>
+            </div>
+            <div id="chat" class="h-96 overflow-auto mb-4 p-4 bg-gray-50 rounded-lg">
+                <!-- Chat messages will go here -->
+            </div>
+            <div class="flex">
+                <input type="text" id="messageInput" class="flex-1 p-2 border-gray-300 rounded-l-lg focus:outline-none focus:ring" placeholder="Type your message...">
+                <button id="sendMessage" class="bg-blue-500 hover:bg-blue-600 text-white px-4 rounded-r-lg">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var themeToggle = document.getElementById('themeToggle');
+        var themeIcon = document.getElementById('themeIcon');
+        var chatContainer = document.getElementById('chatContainer');
+        var currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
+        
+        function updateIcon() {
+            if (currentTheme === 'dark') {
+                themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v8m8-8H4"/>'; // moon icon
+            } else {
+                themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l-5.5 9h11z"/>'; // sun icon
+            }
+        }
+        
+        if (currentTheme) {
+            chatContainer.classList.add(currentTheme);
+            updateIcon();
+        }
+
+        themeToggle.onclick = function() {
+            if (chatContainer.classList.contains('dark')) {
+                chatContainer.classList.remove('dark');
+                currentTheme = '';
+                localStorage.setItem('theme', '');
+            } else {
+                chatContainer.classList.add('dark');
+                currentTheme = 'dark';
+                localStorage.setItem('theme', 'dark');
+            }
+            updateIcon();
+        };
+    });
+
+
+    // JavaScript code to handle sending messages and updating the chat
+document.getElementById('sendMessage').addEventListener('click', function() {
+    var messageInput = document.getElementById('messageInput');
+    var message = messageInput.value;
+
+    fetch('/interface/chat/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'message=' + encodeURIComponent(message),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.response) {
+            // Update your chat interface with the response
+            console.log(data.response);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+
+    messageInput.value = '';  // Clear the input field
+});
+
+</script>
+{% endblock %}
