@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'mainapp',
     'healthTracker',
+    'gptInterface',
 ]
 
 MIDDLEWARE = [
