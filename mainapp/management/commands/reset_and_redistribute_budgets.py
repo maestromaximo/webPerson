@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from mainapp.models import BudgetCategory, FieldEntry
 from datetime import datetime, timedelta
 import random
+from django.db.models import F
 
 class Command(BaseCommand):
     help = 'Resets budget categories to zero and recalculates based on this week\'s field entries'
