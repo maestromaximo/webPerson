@@ -55,6 +55,7 @@ class BudgetCategory(models.Model):
         ('entertainment', 'Entertainment'),
         ('takeout', 'Takeout'),
         ('supplies', 'Supplies'),
+        ('overspent', 'Overspent')
     ]
 
     name = models.CharField(max_length=50, choices=CATEGORY_CHOICES,unique=True, null=False)

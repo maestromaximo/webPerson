@@ -240,7 +240,7 @@ def budget(request):
 
     # Ensure the existence of the "Overspent" category
     overspent_category, created = BudgetCategory.objects.get_or_create(
-        name='Overspent',
+        name='overspent',
         defaults={'weekly_limit': 150}
     )
     if created:
