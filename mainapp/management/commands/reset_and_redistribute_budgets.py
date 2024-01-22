@@ -11,6 +11,15 @@ class Command(BaseCommand):
         # Reset all BudgetCategory amounts to zero
         BudgetCategory.objects.update(amount_spent=0)
 
+        overspent_category, created = BudgetCategory.objects.get_or_create(
+                        name='overspent',
+                        defaults={'weekly_limit': 150}
+                    )
+        overspent_amount = 0
+        overspent_category.amount_spent = overspent_amount
+        
+        overspent_category.save()
+
         # Calculate the start of the current week
         today = datetime.today().date()
         start_of_week = today - timedelta(days=today.weekday())
