@@ -238,6 +238,15 @@ def budget(request):
 
     budget_categories = default_budget.categories.all()
 
+    # Ensure the existence of the "Overspent" category
+    overspent_category, created = BudgetCategory.objects.get_or_create(
+        name='Overspent',
+        defaults={'weekly_limit': 150}
+    )
+    if created:
+        default_budget.categories.add(overspent_category)
+        default_budget.save()
+
     # Categorize transactions that are not yet categorized
     entries = FieldEntry.objects.filter(category__isnull=True)
     for entry in entries:
@@ -272,24 +281,31 @@ def budget(request):
         overspent_amount = category.amount_spent - category.weekly_limit
         category.amount_spent = category.weekly_limit  # Reset to the limit
 
-        while overspent_amount > 0 and eligible_categories.exists():
-            # Choose a random eligible category for redistribution
-            eligible_categories_list = list(eligible_categories)
-            if eligible_categories_list:
+        while overspent_amount > 0:
+            if eligible_categories.exists():
+                # Choose a random eligible category for redistribution
+                eligible_categories_list = list(eligible_categories)
                 recipient_category = random.choice(eligible_categories_list)
 
-            available_space = recipient_category.weekly_limit - recipient_category.amount_spent
-            redistribution_amount = min(overspent_amount, available_space)
+                available_space = recipient_category.weekly_limit - recipient_category.amount_spent
+                redistribution_amount = min(overspent_amount, available_space)
 
-            recipient_category.amount_spent += redistribution_amount
-            overspent_amount -= redistribution_amount
+                recipient_category.amount_spent += redistribution_amount
+                overspent_amount -= redistribution_amount
 
-            # Update the eligible categories if the recipient is now full
-            if recipient_category.amount_spent >= recipient_category.weekly_limit:
-                eligible_categories = eligible_categories.exclude(id=recipient_category.id)
+                # Update the eligible categories if the recipient is now full
+                if recipient_category.amount_spent >= recipient_category.weekly_limit:
+                    eligible_categories = eligible_categories.exclude(id=recipient_category.id)
 
-            recipient_category.save()
+                recipient_category.save()
+            else:
+                # All categories are full, allocate to "Overspent"
+                overspent_category.amount_spent += overspent_amount
+                overspent_amount = 0
+                overspent_category.save()
+
         category.save()
+
     for category in budget_categories:
         percent = (category.amount_spent / category.weekly_limit * 100) if category.weekly_limit else 0
         if percent <= 50:
@@ -298,10 +314,12 @@ def budget(request):
             category.bar_color = 'bg-orange-500'
         else:
             category.bar_color = 'bg-red-600'
+
     context = {
         'budget_categories': budget_categories,
     }
     return render(request, 'budgets.html', context)
+
 
 @login_required
 def update_budget(request):
