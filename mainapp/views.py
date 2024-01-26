@@ -196,7 +196,7 @@ def dashboard(request):
         'total_withdrawals': float(total_withdrawals),
         'current_balance': float(current_balance),
         'weekly_expenses': weekly_expenses,
-        'weekly_trend': weekly_trend,
+        'weekly_trend': float(weekly_trend),
         'graph_data': graph_data,
         'budget_categories': categories,
         'largest_expense': largest_expense,
