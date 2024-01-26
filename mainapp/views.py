@@ -161,17 +161,16 @@ def dashboard(request):
     end_of_week = start_of_week + timedelta(days=6)
     
     weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
-    weekly_expenses = weekly_entries.aggregate(total=Sum('money'))['total'] or 0
-    
-    # Trends - Calculate increase or decrease percentage from last week
-    # Trends - Calculate increase or decrease percentage from last week
-    last_week_expenses = FieldEntry.objects.filter(
-        date__range=[start_of_week - timedelta(days=7), start_of_week - timedelta(days=1)]
-    ).aggregate(total=Sum('money'))['total'] or 0
+    # Weekly stats
+    weekly_expenses = float(weekly_entries.aggregate(total=Sum('money'))['total'] or 0)  # Convert to float
 
-    
+    # Trends
+    last_week_expenses = float(FieldEntry.objects.filter(
+        date__range=[start_of_week - timedelta(days=7), start_of_week - timedelta(days=1)]
+    ).aggregate(total=Sum('money'))['total'] or 0)  # Convert to float
+
     weekly_trend = ((weekly_expenses - last_week_expenses) / last_week_expenses * 100) if last_week_expenses else 0
-    
+
     # Budget stats
     # Note: Ensure that your Budget model logic to reset weekly limits is properly implemented
     budget = Budget.objects.first()  # Assuming one main budget
@@ -179,11 +178,13 @@ def dashboard(request):
     
     # Prepare data for graph
     # Here you can prepare data for a JavaScript chart library like Chart.js
+    # Prepare data for graph
     graph_data = {
         'labels': [cat.name for cat in categories],
-        'data': [cat.amount_spent for cat in categories],
-        'limits': [cat.weekly_limit for cat in categories],
+        'data': [float(cat.amount_spent) for cat in categories],  # Convert to float
+        'limits': [float(cat.weekly_limit) for cat in categories],  # Convert to float
     }
+
 
     # At a glance info, such as largest expense, most common category, etc.
     # You would need to write custom queries for these, this is just an example
@@ -191,9 +192,9 @@ def dashboard(request):
     most_common_category = weekly_entries.values('category').annotate(total=Count('category')).order_by('-total').first()
 
     context = {
-        'total_deposits': total_deposits,
-        'total_withdrawals': total_withdrawals,
-        'current_balance': current_balance,
+        'total_deposits': float(total_deposits),
+        'total_withdrawals': float(total_withdrawals),
+        'current_balance': float(current_balance),
         'weekly_expenses': weekly_expenses,
         'weekly_trend': weekly_trend,
         'graph_data': graph_data,
