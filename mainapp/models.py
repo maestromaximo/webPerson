@@ -105,3 +105,11 @@ class BudgetLog(models.Model):
         return f"Budget Log ({self.start_week.strftime('%Y-%m-%d')} to {self.end_week.strftime('%Y-%m-%d')})" if self.start_week and self.end_week else "Budget Log"
 
 
+class GeneralNotes(models.Model):
+    fieldEntry = models.OneToOneField(FieldEntry, on_delete=models.CASCADE, null=True, blank=True)
+    note = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"General Notes ({self.created_at.strftime('%Y-%m-%d')})" if self.created_at else "General Notes"
