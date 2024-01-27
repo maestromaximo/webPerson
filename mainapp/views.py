@@ -214,7 +214,7 @@ def dashboard(request):
     context = {
         'total_deposits': float(total_budget), ##total deposits will be called the same but in reality is total budget left now, refactor later
         'total_withdrawals': float(total_withdrawals),
-        'current_balance': float(current_balance),
+        'current_balance': round(float(current_balance),2),
         'weekly_expenses': weekly_expenses,
         'weekly_trend': round(float(weekly_trend),2),
         'graph_data': graph_data,
