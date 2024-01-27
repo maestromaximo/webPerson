@@ -148,10 +148,20 @@ def classification_menu(request):
 
 @login_required
 def dashboard(request):
+    """
+    Renders the dashboard page with various statistics and data.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        A rendered HTML template with the dashboard data.
+
+    Raises:
+        None.
+    """
     # General stats
-    total_deposits = FieldEntry.objects.filter(type='deposit').aggregate(total=Sum('money'))['total'] or 0
-    total_withdrawals = FieldEntry.objects.filter(type='withdrawal').aggregate(total=Sum('money'))['total'] or 0
-    current_balance = total_deposits - total_withdrawals
+    # total_deposits = FieldEntry.objects.filter(type='deposit').aggregate(total=Sum('money'))['total'] or 0
     
     # Weekly stats
     today = datetime.today().date()
@@ -159,6 +169,12 @@ def dashboard(request):
     # If you only need the date part
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
+    
+    
+    total_deposits = 0
+    total_withdrawals = FieldEntry.objects.filter(type='withdrawal', date__range = [start_of_week, end_of_week]).aggregate(total=Sum('money'))['total'] or 0
+    current_balance = total_deposits - total_withdrawals
+    
     
     weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
     # Weekly stats
