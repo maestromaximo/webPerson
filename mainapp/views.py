@@ -173,7 +173,7 @@ def dashboard(request):
     
     total_budget = 0
     total_withdrawals = FieldEntry.objects.filter(type='withdrawal', date__range = [start_of_week, end_of_week]).aggregate(total=Sum('money'))['total'] or 0
-    current_balance = total_budget - total_withdrawals
+    
     
     
     weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
@@ -194,7 +194,7 @@ def dashboard(request):
 
     for cat in categories:
         total_budget += float(cat.weekly_limit)
-    
+    current_balance = total_budget - total_withdrawals
     # Prepare data for graph
     # Here you can prepare data for a JavaScript chart library like Chart.js
     # Prepare data for graph
