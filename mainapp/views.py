@@ -194,7 +194,7 @@ def dashboard(request):
 
     for cat in categories:
         total_budget += float(cat.weekly_limit)
-    current_balance = total_budget - total_withdrawals
+    current_balance = total_budget - float(total_withdrawals)
     # Prepare data for graph
     # Here you can prepare data for a JavaScript chart library like Chart.js
     # Prepare data for graph
