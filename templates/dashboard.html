@@ -9,7 +9,7 @@
         <!-- General Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <div class="bg-white p-4 rounded-lg shadow-md text-center">
-                <h2 class="text-xl font-semibold mb-2">Total Deposits</h2>
+                <h2 class="text-xl font-semibold mb-2">Total Budget</h2>
                 <p class="text-3xl font-bold text-green-500">${{ total_deposits }}</p>
             </div>
             <div class="bg-white p-4 rounded-lg shadow-md text-center">
@@ -46,6 +46,10 @@
             <div class="bg-white p-4 rounded-lg shadow-md">
                 <h2 class="text-lg font-semibold mb-2">Most Common Category</h2>
                 <p>{{ most_common_category.category }}: {{ most_common_category.total }} times</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold mb-2">Least Common Category</h2>
+                <p>{{ least_common_category.category }}: {{ least_common_category.total }} times</p>
             </div>
             <!-- Additional at-a-glance components can be added here -->
         </div>

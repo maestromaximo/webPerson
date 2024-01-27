@@ -171,9 +171,9 @@ def dashboard(request):
     end_of_week = start_of_week + timedelta(days=6)
     
     
-    total_deposits = 0
+    total_budget = 0
     total_withdrawals = FieldEntry.objects.filter(type='withdrawal', date__range = [start_of_week, end_of_week]).aggregate(total=Sum('money'))['total'] or 0
-    current_balance = total_deposits - total_withdrawals
+    current_balance = total_budget - total_withdrawals
     
     
     weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
@@ -191,6 +191,9 @@ def dashboard(request):
     # Note: Ensure that your Budget model logic to reset weekly limits is properly implemented
     budget = Budget.objects.first()  # Assuming one main budget
     categories = budget.categories.all() if budget else []
+
+    for cat in categories:
+        total_budget += float(cat.weekly_limit)
     
     # Prepare data for graph
     # Here you can prepare data for a JavaScript chart library like Chart.js
@@ -206,17 +209,19 @@ def dashboard(request):
     # You would need to write custom queries for these, this is just an example
     largest_expense = weekly_entries.order_by('-money').first()
     most_common_category = weekly_entries.values('category').annotate(total=Count('category')).order_by('-total').first()
-
+    least_common_category = weekly_entries.values('category').annotate(total=Count('category')).order_by('total').first()
+    
     context = {
-        'total_deposits': float(total_deposits),
+        'total_deposits': float(total_budget), ##total deposits will be called the same but in reality is total budget left now, refactor later
         'total_withdrawals': float(total_withdrawals),
         'current_balance': float(current_balance),
         'weekly_expenses': weekly_expenses,
-        'weekly_trend': float(weekly_trend),
+        'weekly_trend': round(float(weekly_trend),2),
         'graph_data': graph_data,
         'budget_categories': categories,
         'largest_expense': largest_expense,
         'most_common_category': most_common_category,
+        'least_common_category': least_common_category,
     }
     return render(request, 'dashboard.html', context)
 
