@@ -53,6 +53,18 @@
             </div>
             <!-- Additional at-a-glance components can be added here -->
         </div>
+
+        <!-- Subscriptions Section -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold text-center mb-4">Monthly Subscriptions</h2>
+            <ul>
+                {% for subscription in subscriptions %}
+                <li>{{ subscription.name }}: ${{ subscription.amount }}</li>
+                {% endfor %}
+            </ul>
+            <p class="text-lg font-semibold text-center">Total Subscription Amount: ${{ total_subscription_amount }}</p>
+        </div>
+
     </div>
 </div>
 

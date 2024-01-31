@@ -223,6 +223,31 @@ def dashboard(request):
         'most_common_category': most_common_category,
         'least_common_category': least_common_category,
     }
+
+    # Subscription logic
+    three_months_ago = datetime.now() - timedelta(days=90)
+    entries = FieldEntry.objects.filter(
+        date__gte=three_months_ago,
+        type='withdrawal'
+    )
+
+    grouped_entries = defaultdict(lambda: defaultdict(int))
+    for entry in entries:
+        grouped_entries[(entry.message, entry.money)][entry.date.month] += 1
+
+    subscriptions = []
+    for (message, amount), month_counts in grouped_entries.items():
+        if len(month_counts) >= 2 and all(count == 1 for count in month_counts.values()):
+            subscriptions.append({'name': message, 'amount': amount})
+
+    total_subscription_amount = sum(sub['amount'] for sub in subscriptions)
+
+    # Add subscriptions to context
+    context.update({
+        'subscriptions': subscriptions,
+        'total_subscription_amount': total_subscription_amount,
+    })
+    
     return render(request, 'dashboard.html', context)
 
 @login_required
