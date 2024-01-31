@@ -13,6 +13,8 @@ from django.db.models import F
 import random
 from django.contrib.auth.decorators import login_required
 
+import defaultdict
+
 
 def home(request):
     today = datetime.today().date()
