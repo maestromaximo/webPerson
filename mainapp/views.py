@@ -13,7 +13,7 @@ from django.db.models import F
 import random
 from django.contrib.auth.decorators import login_required
 
-import defaultdict
+from collections import defaultdict
 
 
 def home(request):
