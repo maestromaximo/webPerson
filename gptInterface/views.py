@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from dotenv import load_dotenv
 import os
 import openai
+from .models import ChatModel, ChatSession, Message
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,7 +22,7 @@ def interface_menu(request):
 
 
 @csrf_exempt
-def chat_view(request):
+def chat_viewDEPRECATED(request):
     if request.method == 'POST':
         # Convert the request body to JSON
         data = json.loads(request.body)
@@ -58,13 +59,146 @@ def chat_view(request):
         return JsonResponse({'response': assistant_message['content']})
     else:
         return JsonResponse({'error': 'Invalid request'}, status=400)
+    
+@csrf_exempt
+def chat_view_DEPRECATED2(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user_input = data.get('message', 'No message found')
+        model_slug = data.get('model_slug', 'default-model-slug')  # This should be passed from the frontend
+
+        session_id = data.get('session_id')  # Expect session_id to be passed with the request
+        
+        try:
+            chat_session = ChatSession.objects.get(id=session_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return JsonResponse({'error': 'Chat session not found'}, status=404)
+        
+        try:
+            ai_model = ChatModel.objects.get(slug=model_slug)
+        except ChatModel.DoesNotExist:
+            return JsonResponse({'error': 'AI model not found'}, status=404)
+
+        # Fetch or create a ChatSession for the current user
+        # chat_session, _ = ChatSession.objects.get_or_create(user=request.user)
+
+        # Fetch or create the ChatModel based on the slug
+        ai_model, _ = ChatModel.objects.get_or_create(slug=model_slug)
+
+        # Update the chat session with the selected AI model
+        chat_session.ai_model = ai_model
+        chat_session.save()
+
+        # Save user message to the database
+        user_message = Message.objects.create(chat_session=chat_session, text=user_input, is_user_message=True)
+        
+
+        # Fetch recent messages for context (consider limiting the number of messages for performance)
+        context_messages = Message.objects.filter(chat_session=chat_session).order_by('created_at')[:15]
+
+        # Prepare messages for the OpenAI completion request
+        messages_for_api = [{"role": "system", "content": "You are a helpful assistant."}]
+        messages_for_api += [{"role": "user" if msg.is_user_message else "assistant", "content": msg.text} for msg in context_messages]
+
+        print(messages_for_api)
+
+        # Call OpenAI API with the messages
+        completion = client.chat.completions.create(
+            model=ai_model.model_name,
+            messages=messages_for_api
+        )
+
+        assistant_response = completion.choices[0].message
+        # Save AI response to the database
+        Message.objects.create(chat_session=chat_session, text=assistant_response.content.strip(), is_user_message=False)
+
+        # Return the assistant's response
+        return JsonResponse({'response': assistant_response.content.strip()})
+    else:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+    
+
+@csrf_exempt
+@login_required
+def chat_view(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user_input = data.get('message', '')
+        model_slug = data.get('model_slug', 'default-model-slug')
+
+        # Extract session_id, ensure it's passed and valid
+        session_id = data.get('session_id')
+        if not session_id:
+            return JsonResponse({'error': 'Session ID is required'}, status=400)
+
+        # Attempt to fetch the chat session
+        try:
+            chat_session = ChatSession.objects.get(id=session_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return JsonResponse({'error': 'Chat session not found'}, status=404)
+        
+        # Attempt to fetch the AI model
+        try:
+            ai_model = ChatModel.objects.get(slug=model_slug)
+        except ChatModel.DoesNotExist:
+            return JsonResponse({'error': 'AI model not found'}, status=404)
+
+        # Save user message to the database
+        Message.objects.create(chat_session=chat_session, text=user_input, is_user_message=True)
+        
+        # Optionally, fetch recent messages for context (not shown here for brevity)
+        # context_messages = Message.objects.filter(chat_session=chat_session).order_by('-created_at')[:15]
+
+        # Call OpenAI API with the message (simplified for demonstration)
+        try:
+            response = openai.ChatCompletion.create(
+                model=ai_model.model_name,  # Use the model name from your ChatModel instance
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": user_input}
+                ]
+            )
+            assistant_response = response.choices[0].message.content.strip()
+        except Exception as e:
+            return JsonResponse({'error': 'OpenAI API error: {}'.format(str(e))}, status=500)
+
+        # Save AI response to the database
+        Message.objects.create(chat_session=chat_session, text=assistant_response, is_user_message=False)
+
+        # Return the assistant's response
+        return JsonResponse({'response': assistant_response})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+        
+@csrf_exempt
+def fetch_session_messages(request, session_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'User not authenticated'}, status=403)
+    
+    try:
+        chat_session = ChatSession.objects.get(id=session_id, user=request.user)
+        messages = Message.objects.filter(chat_session=chat_session).order_by('created_at')
+        messages_data = [{'text': message.text, 'is_user_message': message.is_user_message} for message in messages]
+        return JsonResponse({'messages': messages_data})
+    except ChatSession.DoesNotExist:
+        return JsonResponse({'error': 'Chat session not found'}, status=404)
+
 
 @login_required
 def chat(request, model=None):
+    # Delete empty chat sessions for the current user
+    ChatSession.objects.filter(user=request.user, messages__isnull=True).delete()
 
+    # Automatically create a new chat session for each visit to the chat page
+    new_session = ChatSession.objects.create(user=request.user)
+    
+    ai_models = ChatModel.objects.all()  # Fetch all ChatModel instances
+    chat_sessions = ChatSession.objects.filter(user=request.user).exclude(id=new_session.id)  # Exclude the current session
+    
     context = {
-
-        'slug': model,
-
-        }
-    return render(request, 'chat.html')
+        'ai_models': ai_models,
+        'current_session_id': new_session.id,  # Pass the current session ID to the template
+        'chat_sessions': chat_sessions,  # Pass previous sessions to the template for history
+    }
+    return render(request, 'chat.html', context)

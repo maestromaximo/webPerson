@@ -4,14 +4,14 @@
 {% block title %}Chat Interface{% endblock %}
 
 {% block content %}
-<!-- Adjusted container to account for navbar height, e.g., navbar is 16rem (64px) -->
+<!-- Container adjusted for navbar height using Tailwind CSS -->
 <div class="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-[#171717] text-white overflow-hidden">
     <!-- Chat History Sidebar -->
     <aside class="w-full md:w-64 lg:w-1/5 xl:w-1/6 overflow-y-auto bg-[#2c2c2c] p-4">
-        <ul>
-            <!-- Dynamically populate chat history here -->
-            <li class="py-2 border-b border-gray-700 cursor-pointer">Chat 1</li>
-            <li class="py-2 border-b border-gray-700 cursor-pointer">Chat 2</li>
+        <ul id="chatSessionsList">
+            {% for session in chat_sessions %}
+                <li class="py-2 border-b border-gray-700 cursor-pointer" onclick="loadSession('{{ session.id }}')">{{ session.created_at|date:"Y-m-d H:i" }} ({{ session.messages.count }} Messages)</li>
+            {% endfor %}
         </ul>
     </aside>
     
@@ -19,12 +19,20 @@
     <main class="flex-1 flex flex-col">
         <!-- Chat Container -->
         <div class="flex-1 flex flex-col p-6 overflow-hidden">
+            <!-- AI Model Selection -->
+            <div class="mb-4">
+                <select id="aiModelSelect" class="bg-[#292929] text-white p-2 rounded-md">
+                    {% for model in ai_models %}
+                        <option value="{{ model.slug }}">{{ model.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <!-- Chat Messages -->
             <div id="chat" class="flex-1 mb-4 p-4 bg-[#202020] overflow-y-auto rounded-lg">
-                <!-- Chat messages will go here -->
+                <!-- Chat messages will be dynamically added here -->
             </div>
             
-            <!-- Message Input -->
+            <!-- Message Input Area -->
             <div class="flex">
                 <input type="text" id="messageInput" class="flex-1 p-2 border-gray-300 rounded-l-lg focus:outline-none focus:ring bg-[#292929] text-white" placeholder="Type your message...">
                 <button id="sendMessage" class="bg-blue-500 hover:bg-blue-600 text-white px-4 rounded-r-lg">Send</button>
@@ -34,34 +42,75 @@
 </div>
 
 <script>
-    document.getElementById('sendMessage').addEventListener('click', function() {
-        var messageInput = document.getElementById('messageInput');
-        var message = messageInput.value;
-        console.log(message); // For debugging
-        fetch("{% url 'chat_view' %}", {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                'message': message,
-                'model_name': 'gpt-3.5-turbo' // or dynamically set based on user selection
-            })
+document.getElementById('sendMessage').addEventListener('click', function() {
+    var messageInput = document.getElementById('messageInput');
+    var aiModelSelect = document.getElementById('aiModelSelect');
+    var message = messageInput.value;
+    var modelSlug = aiModelSelect.value;
+    console.log(message); // For debugging
+    fetch("{% url 'chat_view' %}", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'message': message,
+            'model_slug': modelSlug // Updated to send the selected model slug
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data); // For debugging
-            // Display the response in the chat window
-            var chatWindow = document.getElementById('chat');
-            var responseElement = document.createElement('div');
-            responseElement.textContent = data.response;
-            chatWindow.appendChild(responseElement);
-            // Clear the input after sending
-            messageInput.value = '';
-        })
-        .catch(error => console.error('Error:', error));
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data); // For debugging
+        // Display the response in the chat window
+        var chatWindow = document.getElementById('chat');
+        var responseElement = document.createElement('div');
+        responseElement.textContent = data.response;
+        chatWindow.appendChild(responseElement);
+        // Auto-scroll to the bottom of the chat window
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        // Clear the input after sending
+        messageInput.value = '';
+    })
+    .catch(error => console.error('Error:', error));
+});
+</script>
+<script>
+    function loadSession(sessionId) {
+    fetch(`/fetch-messages/${sessionId}/`, {  // Adjust the URL based on your actual URL configuration
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',  // Ensures Django processes it as an AJAX request
+        },
+        credentials: 'include',  // Necessary for sessions to work correctly, especially when CSRF and sessions are involved
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const chatWindow = document.getElementById('chat');
+        chatWindow.innerHTML = '';  // Clear current chat messages
+        data.messages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = msg.text;
+            chatWindow.appendChild(messageDiv);
+        });
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+    
+    document.getElementById('chatSessionsList').addEventListener('click', function(event) {
+        const sessionId = event.target.getAttribute('data-session-id');
+        if (sessionId) {
+            loadSession(sessionId);
+        }
     });
     </script>
     
+
 {% endblock %}

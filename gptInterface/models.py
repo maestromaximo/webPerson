@@ -18,7 +18,7 @@ class ChatModel(models.Model):
         super().save(*args, **kwargs)
 
 class ChatSession(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='chat_session')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # If using ChatModel, consider adding a ForeignKey to link a session to a specific AI model
