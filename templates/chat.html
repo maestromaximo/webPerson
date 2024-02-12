@@ -10,7 +10,7 @@
     <aside class="w-full md:w-64 lg:w-1/5 xl:w-1/6 overflow-y-auto bg-[#2c2c2c] p-4">
         <ul id="chatSessionsList">
             {% for session in chat_sessions %}
-                <li class="py-2 border-b border-gray-700 cursor-pointer" onclick="loadSession('{{ session.id }}')">{{ session.created_at|date:"Y-m-d H:i" }} ({{ session.messages.count }} Messages)</li>
+                <li class="py-2 border-b border-gray-700 cursor-pointer" data-session-id="{{ session.id }}" onclick="loadSession('{{ session.id }}')">{{ session.created_at|date:"Y-m-d H:i" }} ({{ session.messages.count }} Messages)</li>
             {% endfor %}
         </ul>
     </aside>
@@ -42,41 +42,12 @@
 </div>
 
 <script>
-document.getElementById('sendMessage').addEventListener('click', function() {
-    var messageInput = document.getElementById('messageInput');
-    var aiModelSelect = document.getElementById('aiModelSelect');
-    var message = messageInput.value;
-    var modelSlug = aiModelSelect.value;
-    console.log(message); // For debugging
-    fetch("{% url 'chat_view' %}", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({
-            'message': message,
-            'model_slug': modelSlug // Updated to send the selected model slug
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data); // For debugging
-        // Display the response in the chat window
-        var chatWindow = document.getElementById('chat');
-        var responseElement = document.createElement('div');
-        responseElement.textContent = data.response;
-        chatWindow.appendChild(responseElement);
-        // Auto-scroll to the bottom of the chat window
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        // Clear the input after sending
-        messageInput.value = '';
-    })
-    .catch(error => console.error('Error:', error));
-});
-</script>
-<script>
-    function loadSession(sessionId) {
+// Assume the currentSessionId is set to the newest session initially.
+let currentSessionId = '{{ current_session_id }}';
+console.log('current'+currentSessionId);
+
+function loadSession(sessionId) {
+    currentSessionId = sessionId; // Update the current session ID when loading a session
     fetch(`/fetch-messages/${sessionId}/`, {  // Adjust the URL based on your actual URL configuration
         method: 'GET',
         headers: {
@@ -103,14 +74,42 @@ document.getElementById('sendMessage').addEventListener('click', function() {
     .catch(error => console.error('Error:', error));
 }
 
+document.getElementById('sendMessage').addEventListener('click', function() {
+    var messageInput = document.getElementById('messageInput');
+    var aiModelSelect = document.getElementById('aiModelSelect');
+    var message = messageInput.value.trim();
+    var modelSlug = aiModelSelect.value;
     
-    document.getElementById('chatSessionsList').addEventListener('click', function(event) {
-        const sessionId = event.target.getAttribute('data-session-id');
-        if (sessionId) {
-            loadSession(sessionId);
-        }
-    });
-    </script>
-    
+    if (message === "") {
+        alert("Please enter a message.");
+        return; // Prevent sending an empty message
+    }
+
+    fetch("{% url 'chat_view' %}", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'message': message,
+            'model_slug': modelSlug,
+            'session_id': currentSessionId // Sending the current session ID
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data); // For debugging
+        // Display the response in the chat window
+        var chatWindow = document.getElementById('chat');
+        var responseElement = document.createElement('div');
+        responseElement.textContent = data.response;
+        chatWindow.appendChild(responseElement);
+        chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
+        messageInput.value = ''; // Clear the input after sending
+    })
+    .catch(error => console.error('Error:', error));
+});
+</script>
 
 {% endblock %}

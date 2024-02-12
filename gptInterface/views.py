@@ -61,7 +61,7 @@ def chat_viewDEPRECATED(request):
         return JsonResponse({'error': 'Invalid request'}, status=400)
     
 @csrf_exempt
-def chat_view_DEPRECATED2(request):
+def chat_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         user_input = data.get('message', 'No message found')
@@ -120,7 +120,7 @@ def chat_view_DEPRECATED2(request):
 
 @csrf_exempt
 @login_required
-def chat_view(request):
+def chat_viewddd(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         user_input = data.get('message', '')
