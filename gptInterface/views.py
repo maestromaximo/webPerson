@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -10,6 +11,8 @@ import openai
 # Load environment variables from .env file
 load_dotenv()
 openai_key=os.getenv("OPENAI_API_KEY")
+openai.api_key = openai_key
+client = openai.OpenAI()
 
 @login_required
 def interface_menu(request):
@@ -20,30 +23,39 @@ def interface_menu(request):
 @csrf_exempt
 def chat_view(request):
     if request.method == 'POST':
+        # Convert the request body to JSON
+        data = json.loads(request.body)
+
         # Fetch user input from the POST request
-        user_input = request.POST.get('message')
-        model_name = request.POST.get('model_name', 'gpt-3.5-turbo')
+        user_input = data.get('message', 'No message found')
+        model_name = data.get('model_name', 'gpt-3.5-turbo')
 
         # Prepare the messages for the chat completion request
         context_messages = request.session.get('chat_context', [])
         messages = [{"role": "user", "content": message} for message in context_messages]
         messages.append({"role": "user", "content": user_input})
 
-        # Create chat completion using the OpenAI API
-        response = openai.ChatCompletion.create(
+        print(messages)
+
+        # Create chat completion using the OpenAI API Sample response ChatCompletionMessage(content='Hello! How can I assist you today?', role='assistant', function_call=None, tool_calls=None)
+        completion = client.chat.completions.create(
             model=model_name,
-            messages=messages,
-            temperature=0.7
-        )
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."}
+            ]+messages
+            )
 
         # Extract the assistant's response
-        assistant_response = response.choices[0].message['content']
+        assistant_response = completion.choices[0].message
+        # print(assistant_response)
+        assistant_message = {"role": "assistant", "content": assistant_response.content.strip()}
 
         # Update the chat context in the session
-        updated_context = context_messages + [user_input, assistant_response.strip()]
+        user_input = {"role": "user", "content": user_input}
+        updated_context = context_messages + [user_input, assistant_message]
         request.session['chat_context'] = updated_context
 
-        return JsonResponse({'response': assistant_response.strip()})
+        return JsonResponse({'response': assistant_message['content']})
     else:
         return JsonResponse({'error': 'Invalid request'}, status=400)
 

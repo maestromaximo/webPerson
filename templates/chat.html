@@ -37,6 +37,7 @@
     document.getElementById('sendMessage').addEventListener('click', function() {
         var messageInput = document.getElementById('messageInput');
         var message = messageInput.value;
+        console.log(message); // For debugging
         fetch("{% url 'chat_view' %}", {
             method: "POST",
             headers: {
