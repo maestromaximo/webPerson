@@ -42,31 +42,26 @@
 </div>
 
 <script>
-// Assume the currentSessionId is set to the newest session initially.
 let currentSessionId = '{{ current_session_id }}';
-console.log('current'+currentSessionId);
 
 function loadSession(sessionId) {
-    currentSessionId = sessionId; // Update the current session ID when loading a session
-    fetch(`/fetch-messages/${sessionId}/`, {  // Adjust the URL based on your actual URL configuration
+    currentSessionId = sessionId;
+    fetch(`/fetch-messages/${sessionId}/`, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',  // Ensures Django processes it as an AJAX request
+            'X-Requested-With': 'XMLHttpRequest',
         },
-        credentials: 'include',  // Necessary for sessions to work correctly, especially when CSRF and sessions are involved
+        credentials: 'include',
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         const chatWindow = document.getElementById('chat');
         chatWindow.innerHTML = '';  // Clear current chat messages
         data.messages.forEach(msg => {
+            // Updated message display
             const messageDiv = document.createElement('div');
+            messageDiv.className = msg.is_user_message ? 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto' : 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
             messageDiv.textContent = msg.text;
             chatWindow.appendChild(messageDiv);
         });
@@ -82,7 +77,7 @@ document.getElementById('sendMessage').addEventListener('click', function() {
     
     if (message === "") {
         alert("Please enter a message.");
-        return; // Prevent sending an empty message
+        return;
     }
 
     fetch("{% url 'chat_view' %}", {
@@ -94,22 +89,41 @@ document.getElementById('sendMessage').addEventListener('click', function() {
         body: JSON.stringify({
             'message': message,
             'model_slug': modelSlug,
-            'session_id': currentSessionId // Sending the current session ID
+            'session_id': currentSessionId
         })
     })
     .then(response => response.json())
     .then(data => {
-        console.log(data); // For debugging
-        // Display the response in the chat window
-        var chatWindow = document.getElementById('chat');
-        var responseElement = document.createElement('div');
-        responseElement.textContent = data.response;
-        chatWindow.appendChild(responseElement);
-        chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
-        messageInput.value = ''; // Clear the input after sending
+        const chatWindow = document.getElementById('chat');
+        // Display user message
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto';
+        userMessageDiv.textContent = message;
+        chatWindow.appendChild(userMessageDiv);
+
+        // Display assistant's response
+        if (data.response) {
+            const responseElement = document.createElement('div');
+            responseElement.className = 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
+            responseElement.textContent = data.response;
+            chatWindow.appendChild(responseElement);
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        messageInput.value = '';
     })
     .catch(error => console.error('Error:', error));
 });
 </script>
 
+<script>
+    document.getElementById('messageInput').addEventListener('keydown', function(event) {
+    // Check if the Enter key is pressed without the Shift key
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); // Prevent the default action to avoid line breaks in input or form submission
+        document.getElementById('sendMessage').click(); // Programmatically click the send button
+    }
+});
+
+</script>
 {% endblock %}
