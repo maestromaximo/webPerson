@@ -10,7 +10,7 @@
     <aside class="w-full md:w-64 lg:w-1/5 xl:w-1/6 overflow-y-auto bg-[#2c2c2c] p-4">
         <ul id="chatSessionsList">
             {% for session in chat_sessions %}
-                <li class="py-2 border-b border-gray-700 cursor-pointer" data-session-id="{{ session.id }}" onclick="loadSession('{{ session.id }}')">{{ session.created_at|date:"Y-m-d H:i" }} ({{ session.messages.count }} Messages)</li>
+                <li class="py-2 border-b border-gray-700 cursor-pointer" data-session-id="{{ session.id }}" onclick="loadSession('{{ session.id }}')">{{session}} ({{ session.messages.count }} Msgs)</li>
             {% endfor %}
         </ul>
     </aside>
@@ -46,7 +46,7 @@ let currentSessionId = '{{ current_session_id }}';
 
 function loadSession(sessionId) {
     currentSessionId = sessionId;
-    fetch(`/fetch-messages/${sessionId}/`, {
+    fetch(`../fetch-messages/${sessionId}/`, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
