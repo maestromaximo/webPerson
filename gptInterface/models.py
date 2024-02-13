@@ -27,7 +27,7 @@ class ChatSession(models.Model):
     # If using ChatModel, consider adding a ForeignKey to link a session to a specific AI model
     ai_model = models.ForeignKey(ChatModel, on_delete=models.SET_NULL, null=True, blank=True, related_name='chat_sessions')
 
-    title = models.CharField(max_length=120, blank=True)
+    title = models.CharField(max_length=120, blank=True, null=True)
 
     def __str__(self):
         if self.title:
