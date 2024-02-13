@@ -178,6 +178,7 @@ def fetch_session_messages(request, session_id):
     
     try:
         chat_session = ChatSession.objects.get(id=session_id, user=request.user)
+        # print(chat_session)
         messages = Message.objects.filter(chat_session=chat_session).order_by('created_at')
         messages_data = [{'text': message.text, 'is_user_message': message.is_user_message} for message in messages]
         return JsonResponse({'messages': messages_data})
