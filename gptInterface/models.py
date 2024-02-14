@@ -100,3 +100,35 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message {self.id} - {('User' if self.is_user_message else 'AI')} - {self.text[:50]}"
+    
+
+
+
+### Start of Auth Models
+ACCESS_LEVEL_CHOICES = [
+    ('basic', 'Basic'),
+    ('premium', 'Premium'),
+    ('advanced', 'Advanced'),
+] 
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    username = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Username")
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    name = models.CharField(max_length=255, blank=True, null=True, help_text="Full Name")
+    email = models.EmailField(blank=True, null=True, unique=True ,help_text="Email Address")
+    phone = models.IntegerField(null=True, help_text="Phone Number")
+
+    access_level = models.CharField(max_length=50, choices=ACCESS_LEVEL_CHOICES, default='basic', help_text="Access Level")
+    usage_costs = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Usage Costs")
+    api_rate_hourly = models.IntegerField(default=20, help_text="API Rate Hourly")
+
+    password = models.CharField(max_length=255, blank=True, null=True, help_text="Password")
+
+    bio = models.TextField(blank=True, null=True, help_text="A short bio about the User [Optional]")
+    
+    
+    
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"

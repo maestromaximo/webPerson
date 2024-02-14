@@ -1,5 +1,5 @@
 import json
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from dotenv import load_dotenv
 import os
 import openai
-from .models import ChatModel, ChatSession, Message
+from .models import ChatModel, ChatSession, Message, Profile
 
 # Load environment variables from .env file
 load_dotenv()
@@ -186,9 +186,18 @@ def fetch_session_messages(request, session_id):
         return JsonResponse({'error': 'Chat session not found'}, status=404)
 
 
-@login_required
+# @login_required
 def chat(request, model=None):
     # Delete empty chat sessions for the current user
+
+    try:
+        profile = Profile.objects.get(user=request.user)
+    except Profile.DoesNotExist:
+        # Handle the case where the user does not have a profile
+        # For example, redirect to a profile creation page or show an error message
+        # Here we'll simply log them out and redirect to the login page for simplicity
+        return redirect('login')
+
     ChatSession.objects.filter(user=request.user, messages__isnull=True).delete()
 
     # Automatically create a new chat session for each visit to the chat page
@@ -203,3 +212,45 @@ def chat(request, model=None):
         'chat_sessions': chat_sessions,  # Pass previous sessions to the template for history
     }
     return render(request, 'chat.html', context)
+
+
+
+##Auth views
+
+from django.contrib.auth import login, authenticate
+from django.contrib.auth import logout
+
+@csrf_exempt
+def login_view(request):
+    if request.method == 'POST':
+        login_identifier = request.POST.get('username')  # Can be an email or username
+        password = request.POST.get('password')
+
+        # Attempt to find a profile by username or email
+        try:
+            if "@" in login_identifier:  # Assume it's an email
+                profile = Profile.objects.get(email=login_identifier)
+            else:
+                profile = Profile.objects.get(username=login_identifier)
+        except Profile.DoesNotExist:
+            # Here you would handle the logic to offer a signup option
+            # For this example, we'll just return an error
+            return JsonResponse({'error': 'Profile not found. Consider signing up?'}, status=404)
+
+        # Authenticate the found user
+        user = authenticate(request, username=profile.user.username, password=password)
+        if user is not None:
+            login(request, user)
+            return JsonResponse({'message': 'Login successful'})
+        else:
+            return JsonResponse({'error': 'Invalid credentials'}, status=401)
+    else:
+        # If not POST, just show the login form (assuming you have a template named 'login.html')
+        return render(request, 'login_page.html')
+    
+def logout_view(request):
+    if request.method == 'POST':
+        logout(request)
+        return JsonResponse({'message': 'Logout successful'})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)

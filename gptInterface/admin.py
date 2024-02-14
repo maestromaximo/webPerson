@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChatModel, ChatSession, Message
+from .models import ChatModel, ChatSession, Message, Profile
 
 # Already defined ChatModelAdmin
 @admin.register(ChatModel)
@@ -37,3 +37,16 @@ class MessageAdmin(admin.ModelAdmin):
         """Create a shortened preview of the message text."""
         return obj.text[:50] + '...' if len(obj.text) > 50 else obj.text
     text_preview.short_description = 'Preview'
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'username', 'name', 'email', 'phone', 'access_level', 'usage_costs', 'api_rate_hourly', 'bio')
+    list_filter = ('access_level',)
+    search_fields = ('user__username', 'username', 'name', 'email')
+    ordering = ('user', 'access_level')
+    fieldsets = (
+        (None, {
+            'fields': ('user', 'profile_picture', 'username', 'name', 'email', 'phone', 'access_level', 'usage_costs', 'api_rate_hourly', 'password', 'bio'),
+        }),
+    )
