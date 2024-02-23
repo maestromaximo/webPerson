@@ -28,5 +28,7 @@ class Command(BaseCommand):
             except BudgetCategory.DoesNotExist:
                 print('Missed category!!')
                 pass
+            except Exception as e:
+                print(f'Error: {e}')
 
         self.stdout.write(self.style.SUCCESS('Successfully reset and recalculated budget categories'))
