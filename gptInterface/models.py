@@ -10,16 +10,16 @@ class ChatModel(models.Model):
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     notes = models.TextField(blank=True)
     model_name = models.CharField(max_length=50, default='gpt-3.5-turbo-0613')
-
+    pre_messages = models.TextField(blank=True, help_text="Enter pre-messages (JSON format) for the model.")
+    
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
-            
         super().save(*args, **kwargs)
-
+        
 class ChatSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
     created_at = models.DateTimeField(auto_now_add=True)

@@ -65,9 +65,9 @@ def chat_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         user_input = data.get('message', 'No message found')
-        model_slug = data.get('model_slug', 'default-model-slug')  # This should be passed from the frontend
+        model_slug = data.get('model_slug', 'default-model-slug')
 
-        session_id = data.get('session_id')  # Expect session_id to be passed with the request
+        session_id = data.get('session_id')
         
         try:
             chat_session = ChatSession.objects.get(id=session_id, user=request.user)
@@ -79,26 +79,23 @@ def chat_view(request):
         except ChatModel.DoesNotExist:
             return JsonResponse({'error': 'AI model not found'}, status=404)
 
-        # Fetch or create a ChatSession for the current user
-        # chat_session, _ = ChatSession.objects.get_or_create(user=request.user)
-
-        # Fetch or create the ChatModel based on the slug
-        ai_model, _ = ChatModel.objects.get_or_create(slug=model_slug)
-
-        # Update the chat session with the selected AI model
-        chat_session.ai_model = ai_model
-        chat_session.save()
-
-        # Save user message to the database
-        user_message = Message.objects.create(chat_session=chat_session, text=user_input, is_user_message=True)
+        # Conditional parsing of pre_messages
+        try:
+            pre_messages = json.loads(ai_model.pre_messages) if ai_model.pre_messages else []
+        except json.JSONDecodeError:
+            pre_messages = []  # Fallback to an empty list if there is a JSON format issue
         
-
-        # Fetch recent messages for context (consider limiting the number of messages for performance)
+        # Fetch recent user and assistant messages for context
         context_messages = Message.objects.filter(chat_session=chat_session).order_by('created_at')[:15]
 
-        # Prepare messages for the OpenAI completion request
-        messages_for_api = [{"role": "system", "content": "You are a helpful assistant."}]
-        messages_for_api += [{"role": "user" if msg.is_user_message else "assistant", "content": msg.text} for msg in context_messages]
+        # Combine pre-messages with the context messages, ensuring correct ordering
+        messages_for_api = pre_messages + [
+            {"role": "user" if msg.is_user_message else "assistant", "content": msg.text} 
+            for msg in context_messages
+        ]
+
+        # Add the latest user input to the end
+        messages_for_api.append({"role": "user", "content": user_input})
 
         print(messages_for_api)
 
@@ -110,10 +107,11 @@ def chat_view(request):
 
         assistant_response = completion.choices[0].message
         # Save AI response to the database
+        Message.objects.create(chat_session=chat_session, text=user_input, is_user_message=True)
         Message.objects.create(chat_session=chat_session, text=assistant_response.content.strip(), is_user_message=False)
-
+        # Message.objects.create(chat_session=chat_session, text=user_input, is_user_message=True)
         # Return the assistant's response
-        return JsonResponse({'response': assistant_response.content.strip()})
+        return JsonResponse({"response": assistant_response.content.strip()})
     else:
         return JsonResponse({'error': 'Invalid request'}, status=400)
     
