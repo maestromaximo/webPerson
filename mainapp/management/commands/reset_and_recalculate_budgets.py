@@ -18,7 +18,7 @@ class Command(BaseCommand):
 
         # Recalculate the amounts
         for entry in this_week_entries:
-            if entry.category:  # Check if entry.category is not None
+            if entry.category:  # Check if category is not None
                 try:
                     budget_category = BudgetCategory.objects.filter(name__icontains=entry.category).first()
                     if budget_category:
@@ -28,8 +28,7 @@ class Command(BaseCommand):
                         print(f'Missed category for entry: {entry}')
                 except BudgetCategory.DoesNotExist:
                     print('Missed category!!')
-                    pass
             else:
-                print(f'Entry without category: {entry}')
+                print(f'Entry with ID {entry.id} has no category.')
 
         self.stdout.write(self.style.SUCCESS('Successfully reset and recalculated budget categories'))
