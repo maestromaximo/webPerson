@@ -77,6 +77,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'webPerson.wsgi.application'
 
+LOGIN_URL = '/interface/login/'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases

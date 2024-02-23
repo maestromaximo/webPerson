@@ -186,7 +186,7 @@ def fetch_session_messages(request, session_id):
         return JsonResponse({'error': 'Chat session not found'}, status=404)
 
 
-# @login_required
+@login_required
 def chat(request, model=None):
     # Delete empty chat sessions for the current user
 
