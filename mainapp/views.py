@@ -16,6 +16,9 @@ from django.contrib.auth.decorators import login_required
 from collections import defaultdict
 
 
+def privacy(request):
+    return render(request, 'privacypolicy.html')
+
 def home(request):
     today = datetime.today().date()
     start_of_week = today - timedelta(days=today.weekday())

@@ -9,4 +9,6 @@ urlpatterns = [
     path('budget/', views.budget, name='budget'),
     path('budget/update/', views.update_budget, name='update_budget'),
 
+    path('privacy/', views.privacy, name='privacy'),
+
 ]
