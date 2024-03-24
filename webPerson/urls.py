@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('mainapp.urls')),
     path('health/', include('healthTracker.urls')),
     path('interface/', include('gptInterface.urls')),
+    path('education/', include('education.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
