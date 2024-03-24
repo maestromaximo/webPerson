@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'mainapp',
     'healthTracker',
     'gptInterface',
+    'education',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
