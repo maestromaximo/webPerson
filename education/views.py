@@ -23,21 +23,68 @@ def education_home(request):
 
 @api_view(['POST'])
 def upload_and_transcribe(request):
-    if 'audio_file' not in request.FILES or 'source' not in request.data:
-        return Response({'error': 'Audio file or source identifier missing.'}, status=400)
+    """
+    Uploads an audio file, transcribes it, and creates a Transcript object.
 
-    audio_file = request.FILES['audio_file']
-    source = request.data['source']
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: A Response object with the transcription text, source, and lesson slug if successful.
+                      Otherwise, returns a Response object with an error message and corresponding status code.
+
+    Raises:
+        ValueError: If any of the required parameters (audio_file, source, lesson_slug) are missing.
+        ValueError: If the provided class_slug does not correspond to an existing Class object.
+        ValueError: If the lesson does not exist and no class_slug is provided to create one.
+
+    Full Args:
+        request (HttpRequest): The HTTP request object.
+        audio_file (File): The audio file to be transcribed.
+        source (str): The source of the audio file.
+        lesson_slug (str): The slug of the lesson associated with the transcription.
+        class_slug (str, optional): The slug of the class associated with the lesson (optional).
+
+    """
+    audio_file = request.FILES.get('audio_file')
+    source = request.data.get('source')
+    lesson_slug = request.data.get('lesson_slug')
+    class_slug = request.data.get('class_slug', None)  # Optional class slug
+
+    if not audio_file or not source or not lesson_slug:
+        return Response({'error': 'Missing required parameters.'}, status=400)
+
+    lesson = Lesson.objects.filter(slug=lesson_slug).first()
+
+    if not lesson and class_slug:
+        class_instance = Class.objects.filter(slug=class_slug).first()
+        if not class_instance:
+            return Response({'error': 'Class does not exist.'}, status=400)
+        # Create a new lesson if it does not exist
+        lesson = Lesson.objects.create(title='New Lesson', related_class=class_instance)
+
+    if not lesson:
+        return Response({'error': 'Lesson does not exist and no class provided to create one.'}, status=400)
+
 
     try:
-        transcript = client.audio.transcriptions.create(
+        # Transcribe the audio file
+        transcript_response = client.audio.transcriptions.create(
             file=audio_file, model="whisper-1"
         )
-        return Response({'transcription': transcript['text'], 'source': source}, status=200)
+        transcription_text = transcript_response['text']
+
+        # Create a Transcript object
+        transcript = Transcript.objects.create(
+            content=transcription_text,
+            related_lesson=lesson,
+            source=source
+        )
+
+        return Response({'transcription': transcription_text, 'source': source, 'lesson':lesson.slug }, status=200)
     except AuthenticationError as e:
-        return Response({'error': str(e)}, status=401)
+        return Response({'error': 'Authentication error.'}, status=401)
     except Exception as e:
-        # Catch other possible exceptions and handle them accordingly
         return Response({'error': 'Failed to transcribe audio.'}, status=500)
     
     
