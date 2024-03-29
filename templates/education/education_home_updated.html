@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
+  <!-- Navigation and Top Bar Here -->
+
+  <!-- Chat button at the top right corner -->
+  <div class="flex justify-between px-6 py-4">
+    <h2 class="text-2xl font-bold">Dashboard</h2>
+    <button class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+      Chat
+    </button>
+  </div>
+
+  <!-- Main dashboard container -->
+  <div class="container mx-auto px-4 sm:px-8">
+    <div class="py-4">
+      <!-- Dashboard Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- Main Content -->
+        <div class="lg:col-span-9 space-y-4">
+          
+          <!-- Performance Overview -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <h3 class="text-lg font-semibold">Performance Overview</h3>
+            <!-- Include charts or progress bars here -->
+          </div>
+
+          <!-- Task List -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <h3 class="text-lg font-semibold">Tasks & Deadlines</h3>
+            <!-- Task list or calendar view here -->
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <h3 class="text-lg font-semibold">Recent Activity</h3>
+            <!-- Activity feed here -->
+          </div>
+
+          <!-- Announcements -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <h3 class="text-lg font-semibold">Announcements</h3>
+            <!-- Announcements content here -->
+          </div>
+          
+          <!-- Class Schedule -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <h3 class="text-lg font-semibold">Class Schedule</h3>
+            <!-- Timetable or schedule content here -->
+          </div>
+          
+        </div>
+
+        <!-- Right Sidebar - Active Classes and Quick Links -->
+        <div class="lg:col-span-3 space-y-4">
+
+          <!-- Active Classes -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-auto p-4" style="max-height: 40vh;">
+            <h3 class="text-lg font-semibold mb-2">Active Classes</h3>
+            <ul class="space-y-2">
+              <!-- Dynamic list of classes here -->
+            </ul>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-2">Quick Links</h3>
+            <ul class="space-y-2">
+              <!-- List of quick links here -->
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
