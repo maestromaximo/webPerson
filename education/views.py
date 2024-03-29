@@ -11,7 +11,7 @@ from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer,
 
 def education_home(request):
     context = {}
-    return render(request, 'education/education_home.html', context)
+    return render(request, 'education/education_home_dark.html', context)
 
 
 
