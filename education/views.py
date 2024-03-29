@@ -1,3 +1,4 @@
+import datetime
 from django.shortcuts import render
 import requests
 from rest_framework import generics, status, viewsets
@@ -5,6 +6,7 @@ from rest_framework.response import Response
 # import openai
 from .models import Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test
 from rest_framework.decorators import api_view
+from django.db.models import Count
 from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer, 
                           LessonSerializer, ProblemSerializer, ToolSerializer, 
                           TranscriptSerializer, NotesSerializer, AssignmentSerializer, 
@@ -15,11 +17,33 @@ from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
 
 
+
 def education_home(request):
-    context = {}
+    # Get all classes
+    active_classes = Class.objects.all()
+    
+    # Upcoming class
+    now = datetime.datetime.now()
+    upcoming_schedules = Schedule.objects.filter(start_time__gt=now).order_by('start_time')
+    if upcoming_schedules:
+        upcoming_class = upcoming_schedules.first().class_belongs
+    else:
+        upcoming_class = None
+
+    # Upcoming tests
+    upcoming_tests = Test.objects.filter(date__gt=now).order_by('date')[:5]
+
+    # Most reviewed lesson - you will need to define the logic for this
+    most_reviewed_lesson = Lesson.objects.annotate(num_reviews=Count('transcripts')).first()
+
+    context = {
+        'active_classes': active_classes,
+        'upcoming_class': upcoming_class,
+        'upcoming_tests': upcoming_tests,
+        'most_reviewed_lesson': most_reviewed_lesson,
+    }
+
     return render(request, 'education/education_home_dark.html', context)
-
-
 
 @api_view(['POST'])
 def upload_and_transcribe(request):
