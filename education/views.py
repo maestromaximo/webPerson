@@ -1,13 +1,19 @@
 from django.shortcuts import render
+import requests
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
+# import openai
 from .models import Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test
+from rest_framework.decorators import api_view
 from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer, 
                           LessonSerializer, ProblemSerializer, ToolSerializer, 
                           TranscriptSerializer, NotesSerializer, AssignmentSerializer, 
                           ProblemSetSerializer, TestSerializer)
 
 # Create your views here.
+from openai import AuthenticationError, OpenAI  # Import the OpenAI class
+client = OpenAI()
+
 
 def education_home(request):
     context = {}
@@ -15,6 +21,26 @@ def education_home(request):
 
 
 
+@api_view(['POST'])
+def upload_and_transcribe(request):
+    if 'audio_file' not in request.FILES or 'source' not in request.data:
+        return Response({'error': 'Audio file or source identifier missing.'}, status=400)
+
+    audio_file = request.FILES['audio_file']
+    source = request.data['source']
+
+    try:
+        transcript = client.audio.transcriptions.create(
+            file=audio_file, model="whisper-1"
+        )
+        return Response({'transcription': transcript['text'], 'source': source}, status=200)
+    except AuthenticationError as e:
+        return Response({'error': str(e)}, status=401)
+    except Exception as e:
+        # Catch other possible exceptions and handle them accordingly
+        return Response({'error': 'Failed to transcribe audio.'}, status=500)
+    
+    
 class ClassViewSet(viewsets.ModelViewSet):
     queryset = Class.objects.all()
     serializer_class = ClassSerializer
@@ -58,6 +84,8 @@ class ProblemSetViewSet(viewsets.ModelViewSet):
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all()
     serializer_class = TestSerializer
+
+
 
 
 

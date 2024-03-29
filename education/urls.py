@@ -15,9 +15,11 @@ router.register(r'assignments', views.AssignmentViewSet)
 router.register(r'problemsets', views.ProblemSetViewSet)
 router.register(r'tests', views.TestViewSet)
 
+
 urlpatterns = [
     path('', views.education_home, name='education_home'),
     path('api/', include(router.urls)),
+    path('api/lessons/transcribe/', views.upload_and_transcribe, name='transcribe-lesson')
     # path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
 
