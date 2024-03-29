@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
+  <!-- Main container -->
+  <div class="container mx-auto px-4 sm:px-8 py-6">
+    <!-- Top Bar with Chat Button -->
+    <div class="flex justify-between mb-4">
+      <h1 class="text-3xl font-bold dark:text-gray-200">Lesson Title</h1>
+      <button class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+        Chat
+      </button>
+    </div>
+
+    <!-- Lesson Dashboard Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <!-- Main Content Area -->
+      <div class="lg:col-span-8 space-y-4">
+        <!-- Transcriptions -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Transcriptions</h2>
+          <!-- Dynamic content for transcriptions -->
+        </div>
+        
+        <!-- Examples -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Examples</h2>
+          <!-- Dynamic content for examples -->
+        </div>
+        
+        <!-- Assignments -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Assignments</h2>
+          <!-- Dynamic content for assignments -->
+        </div>
+        
+        <!-- Insights -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Insights</h2>
+          <!-- Dynamic content for insights -->
+        </div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <div class="lg:col-span-4 space-y-4">
+        <!-- Book Section -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Book Section</h2>
+          <!-- Dynamic content for book section -->
+        </div>
+        
+        <!-- PDF Notes -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">PDF Notes</h2>
+          <!-- Dynamic content for PDF notes -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
