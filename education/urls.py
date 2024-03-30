@@ -19,9 +19,11 @@ router.register(r'tests', views.TestViewSet)
 urlpatterns = [
     path('', views.education_home, name='education_home'),
     path('api/', include(router.urls)),
-    path('api/lessons/transcribe/', views.upload_and_transcribe, name='transcribe-lesson')
+    path('api/lessons/transcribe/', views.upload_and_transcribe, name='transcribe-lesson'),
     # path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
+    path('class/<slug:class_slug>/', views.class_dashboard, name='class_dashboard'),
+    path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),
 
     # path('api/classes/', views.ClassListView.as_view(), name='class-list'),
     # path('api/classes/<int:class_id>/', views.ScheduleDetailView.as_view(), name='schedule-detail'),

@@ -65,7 +65,7 @@
           <ul class="space-y-2">
             {% for class in active_classes %}
             <li class="text-gray-700 dark:text-gray-300 hover:text-gray-800 dark:hover:text-blue-400 transition duration-150 ease-in-out cursor-pointer">
-              {{ class.name }} ({{ class.subject }})
+              <a href="{%url 'class_dashboard' class_slug=class.slug%}">{{ class.name }} ({{ class.subject }})</a>
             </li>
             {% empty %}
             <li class="text-gray-500 dark:text-gray-400">No active classes</li>

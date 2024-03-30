@@ -19,6 +19,13 @@ SOURCE_CHOICES = [
     ('Student', 'Student'),
 ]
 
+PROMPT_CHOICES = [
+    ('Insight', 'Insight'),
+    ('Technical', 'Technical'),
+    ('Creative', 'Creative'),
+    ('Other', 'Other'),
+]
+
 class Class(models.Model):
     name = models.CharField(max_length=255)
     subject = models.CharField(max_length=255)
@@ -83,10 +90,12 @@ class Problem(models.Model):
         return self.description[:50]  # Show first 50 chars
     
 class Tool(models.Model):
+    title = models.CharField(max_length=255, null=True, blank=True)
+    path = models.FilePathField(null=True, blank = True, help_text="Path to the tool")
     code = models.TextField()
     schema = models.JSONField()
-    description = models.TextField()
-    associated_problem = models.ForeignKey(Problem, related_name='tools', on_delete=models.CASCADE)
+    description = models.TextField(null=True, blank=True)
+    associated_problem = models.ForeignKey(Problem, null=True, related_name='tools', on_delete=models.CASCADE)
 
 class Transcript(models.Model):
     content = models.TextField()
@@ -123,3 +132,86 @@ class Test(models.Model):
 
     def __str__(self):
         return f"{self.related_class.name} Test on {self.date}"
+
+class Prompt(models.Model):
+    title = models.CharField(max_length=255)
+    prompt = models.TextField()
+    description = models.TextField(blank=True, null=True)
+    category = models.CharField(max_length=100, choices=PROMPT_CHOICES, default='Other')
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.title
+
+    def format_prompt(self, *args, **kwargs):
+        """
+        Formats the prompt string with the provided arguments using Python's str.format() method.
+        This allows for dynamic insertion of values into the prompt template.
+
+        :param args: Positional arguments for placeholders.
+        :param kwargs: Keyword arguments for named placeholders.
+        :return: A formatted prompt string.
+        """
+        return self.prompt.format(*args, **kwargs)
+
+    @classmethod
+    def filter_by_category(cls, category):
+        """
+        Filters prompts by category.
+
+        :param category: The category to filter by.
+        :return: QuerySet of prompts that match the category.
+        """
+        return cls.objects.filter(category=category, active=True)
+    
+class GPTInstance(models.Model):
+    model_name = models.CharField(max_length=70)
+    slug = models.SlugField(max_length=70, unique=True)
+    tools = models.ManyToManyField(Tool, blank=True)
+    use_embeddings = models.BooleanField(default=False)
+    web_access = models.BooleanField(default=False)
+    pre_feed_context = models.JSONField(blank=True, null=True)
+    default_path = models.CharField(max_length=255, blank=True, null=True)
+    model = models.CharField(max_length=50, default='gpt-3.5-turbo-0613')
+
+    def __str__(self):
+        return self.model_name
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def no_context_chat(self, prompt):
+        # Placeholder for no context chat method
+        pass
+
+    def chat(self, prompt, conversation=None):
+        # Placeholder for chat method with optional conversation context
+        pass
+
+    def execute_tool(self, prompt, tool):
+        # Placeholder for tool execution method
+        pass
+
+class Conversation(models.Model):
+    gpt_instance = models.ForeignKey(GPTInstance, on_delete=models.SET_NULL, null=True, blank=True, related_name='conversations')
+    title = models.CharField(max_length=120, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title or f"Conversation {self.id}"
+
+    def set_title(self):
+        # Placeholder method to set conversation title based on messages
+        pass
+
+class Message(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    text = models.TextField()
+    is_user_message = models.BooleanField(default=True)  # True if from user, False if from AI
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message {self.id} - {('User' if self.is_user_message else 'assistant')} - {self.text[:50]}"

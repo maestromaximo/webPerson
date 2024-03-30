@@ -1,5 +1,5 @@
 import datetime
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 import requests
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
@@ -44,6 +44,51 @@ def education_home(request):
     }
 
     return render(request, 'education/education_home_dark.html', context)
+
+def class_dashboard(request, class_slug):
+    # Retrieve the class by slug. If not found, a 404 error will be raised.
+    selected_class = get_object_or_404(Class, slug=class_slug)
+    
+    # Fetch additional data needed for the class dashboard
+    class_schedules = Schedule.objects.filter(class_belongs=selected_class)
+    class_books = Book.objects.filter(related_class=selected_class)
+    class_assignments = Assignment.objects.filter(related_class=selected_class)
+    class_tests = Test.objects.filter(related_class=selected_class)
+    class_lessons = Lesson.objects.filter(related_class=selected_class)
+
+    # Prepare the context
+    context = {
+        'selected_class': selected_class,
+        'class_schedules': class_schedules,
+        'class_books': class_books,
+        'class_assignments': class_assignments,
+        'class_tests': class_tests,
+        'class_lessons': class_lessons,
+    }
+
+    return render(request, 'education/class_home.html', context)
+
+def lesson_dashboard(request, lesson_slug):
+    # Retrieve the lesson by slug. If not found, a 404 error will be raised.
+    selected_lesson = get_object_or_404(Lesson, slug=lesson_slug)
+
+    # Fetch additional data needed for the lesson dashboard
+    lesson_transcripts = Transcript.objects.filter(related_lesson=selected_lesson)
+    lesson_notes = Notes.objects.filter(related_lesson=selected_lesson)
+    lesson_problems = Problem.objects.filter(related_lessons=selected_lesson)
+    lesson_tools = Tool.objects.filter(associated_problem__in=lesson_problems)
+
+    # Prepare the context
+    context = {
+        'selected_lesson': selected_lesson,
+        'lesson_transcripts': lesson_transcripts,
+        'lesson_notes': lesson_notes,
+        'lesson_problems': lesson_problems,
+        'lesson_tools': lesson_tools,
+    }
+
+    return render(request, 'education/lesson_home.html', context)
+
 
 @api_view(['POST'])
 def upload_and_transcribe(request):

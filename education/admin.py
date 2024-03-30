@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test
+from .models import Class, Prompt, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, GPTInstance, Message, Conversation
 
 class ScheduleInline(admin.TabularInline):
     model = Schedule
@@ -40,6 +40,7 @@ class TestInline(admin.TabularInline):
 @admin.register(Class)
 class ClassAdmin(admin.ModelAdmin):
     list_display = ('name', 'subject')
+    prepopulated_fields = {"slug": ("name",)}
     inlines = [ScheduleInline, LessonInline, AssignmentInline, TestInline]
 
 @admin.register(Schedule)
@@ -55,6 +56,7 @@ class BookAdmin(admin.ModelAdmin):
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
     list_display = ('title', 'related_class')
+    prepopulated_fields = {"slug": ("title",)}
     list_filter = ('related_class',)
     inlines = [TranscriptInline, NotesInline, ProblemSetInline]
 
@@ -92,3 +94,50 @@ class ProblemSetAdmin(admin.ModelAdmin):
 class TestAdmin(admin.ModelAdmin):
     list_display = ('related_class', 'date', 'duration')
     list_filter = ('date', 'related_class')
+
+@admin.register(Prompt)
+class PromptAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'active')
+    list_filter = ('active', 'category')
+    search_fields = ('title', 'prompt', 'description')
+    actions = ['make_active', 'make_inactive']
+
+    @admin.action(description='Mark selected prompts as active')
+    def make_active(self, request, queryset):
+        queryset.update(active=True)
+
+    @admin.action(description='Mark selected prompts as inactive')
+    def make_inactive(self, request, queryset):
+        queryset.update(active=False)
+
+@admin.register(GPTInstance)
+class GPTInstanceAdmin(admin.ModelAdmin):
+    list_display = ('model_name', 'use_embeddings', 'web_access', 'default_path')
+    prepopulated_fields = {"slug": ("model_name",)}
+    list_filter = ('model_name', 'use_embeddings', 'web_access')
+    search_fields = ('model_name',)
+    filter_horizontal = ('tools',)
+
+@admin.register(Conversation)
+class ConversationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'gpt_instance', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'gpt_instance')
+    search_fields = ('title',)
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('gpt_instance')
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'short_text', 'is_user_message', 'conversation', 'created_at')
+    list_filter = ('is_user_message', 'created_at', 'conversation')
+    search_fields = ('text',)
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+
+    def short_text(self, obj):
+        return obj.text[:50] + '...' if len(obj.text) > 50 else obj.text
+    short_text.short_description = 'Text'
