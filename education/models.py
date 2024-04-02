@@ -1,3 +1,5 @@
+import os
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
@@ -91,11 +93,33 @@ class Problem(models.Model):
     
 class Tool(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
-    path = models.FilePathField(null=True, blank = True, help_text="Path to the tool")
+    path = models.FilePathField(path=settings.TOOL_FILES_PATH,match=".*", recursive=True, null=True, blank=True, help_text="Path to the tool")
     code = models.TextField()
     schema = models.JSONField()
     description = models.TextField(null=True, blank=True)
-    associated_problem = models.ForeignKey(Problem, null=True, related_name='tools', on_delete=models.CASCADE)
+    associated_problem = models.ForeignKey(Problem, null=True,blank=True, related_name='tools', on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        # Check if the directory exists, create it if not
+        if self.path and not os.path.exists(self.path):
+            os.makedirs(self.path, exist_ok=True)
+        if self.code and self.title:
+            # Write the code to a file
+            file_path = os.path.join(settings.TOOL_FILES_PATH, slugify(self.title)+'.py')
+            with open(file_path, 'w') as file:
+                file.write(self.code)
+            self.path = file_path
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        if self.title:
+            return self.title
+        elif self.description:
+            return self.description[:30] + "..."
+        elif self.associated_problem:
+            return self.associated_problem.title
+        else:
+            return 'Unnamed Tool'
 
 class Transcript(models.Model):
     content = models.TextField()
@@ -179,7 +203,7 @@ class GPTInstance(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = slugify(self.model_name)
         super().save(*args, **kwargs)
 
     def no_context_chat(self, prompt):

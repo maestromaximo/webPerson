@@ -4,9 +4,9 @@
 <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
   <!-- Main container -->
   <div class="container mx-auto px-4 sm:px-8 py-6">
-    <!-- Top Bar with Chat Button -->
+    <!-- Top Bar with Lesson Title and Chat Button -->
     <div class="flex justify-between mb-4">
-      <h1 class="text-3xl font-bold dark:text-gray-200">Lesson Title</h1>
+      <h1 class="text-3xl font-bold dark:text-gray-200">{{ selected_lesson.title }}</h1>
       <button class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
         Chat
       </button>
@@ -19,40 +19,52 @@
         <!-- Transcriptions -->
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Transcriptions</h2>
-          <!-- Dynamic content for transcriptions -->
+          {% for transcript in lesson_transcripts %}
+            <p>{{ transcript.content }}</p>
+            <!-- You might want to format the content or truncate if too long -->
+          {% empty %}
+            <p>No transcriptions available.</p>
+          {% endfor %}
         </div>
         
-        <!-- Examples -->
+        <!-- Examples/Problems -->
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Examples</h2>
-          <!-- Dynamic content for examples -->
+          {% for problem in lesson_problems %}
+            <div>{{ problem.description }}</div>
+            <!-- Add more details as needed -->
+          {% empty %}
+            <div>No examples available.</div>
+          {% endfor %}
         </div>
         
-        <!-- Assignments -->
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Assignments</h2>
-          <!-- Dynamic content for assignments -->
-        </div>
-        
-        <!-- Insights -->
+        <!-- Insights - Assuming you have a mechanism to generate insights -->
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Insights</h2>
           <!-- Dynamic content for insights -->
+          <p>Insights based on lesson engagement and performance...</p>
         </div>
       </div>
 
-      <!-- Right Sidebar -->
+      <!-- Right Sidebar - Book Section and PDF Notes -->
       <div class="lg:col-span-4 space-y-4">
-        <!-- Book Section -->
+        <!-- Book Section - Assuming the book is related to the class -->
+        {% if selected_lesson.related_class.book %}
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Book Section</h2>
-          <!-- Dynamic content for book section -->
+          <div>{{ selected_lesson.related_class.book.title }}</div>
         </div>
+        {% endif %}
         
         <!-- PDF Notes -->
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">PDF Notes</h2>
-          <!-- Dynamic content for PDF notes -->
+          {% for note in lesson_notes %}
+            <!-- Assuming you have a way to view the PDF -->
+            <a href="{{ note.file.url }}" target="_blank">View Notes</a>
+          {% empty %}
+            <p>No PDF notes available.</p>
+          {% endfor %}
         </div>
       </div>
     </div>

@@ -68,8 +68,9 @@ class ProblemAdmin(admin.ModelAdmin):
 
 @admin.register(Tool)
 class ToolAdmin(admin.ModelAdmin):
-    list_display = ('description', 'associated_problem')
+    list_display = ('title','description', 'associated_problem')
     list_filter = ('associated_problem',)
+    search_fields = ('title', 'description')
 
 @admin.register(Transcript)
 class TranscriptAdmin(admin.ModelAdmin):
