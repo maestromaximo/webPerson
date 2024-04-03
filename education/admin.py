@@ -51,6 +51,7 @@ class ScheduleAdmin(admin.ModelAdmin):
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
     list_display = ('title', 'page_count', 'related_class')
+    prepopulated_fields = {"slug": ("title",)}
     search_fields = ('title', 'related_class__name')
 
 @admin.register(Lesson)

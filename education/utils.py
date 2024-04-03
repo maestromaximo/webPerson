@@ -4,23 +4,7 @@ from dotenv import load_dotenv
 import openai
 import json
 import subprocess
-
-load_dotenv()
-
-openai_key = os.getenv("OPENAI_API_KEY")
-# openai.api_key = 'your-api-key'
-client = openai.Client()
-
-def extract_text_from_pdf(file_path):
-    """
-    Extract text from a PDF file and return it as a string.
-    """
-    text = ""
-    with open(file_path, "rb") as file:
-        reader = PyPDF2.PdfReader(file)
-        for page in reader.pages:
-            text += page.extract_text()
-    return text
+import fitz  # PyMuPDF
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -35,6 +19,50 @@ MODELS = {
     'text-embedding-small': 'text-embedding-3-small',
     'moderation': 'text-moderation-latest',
 }
+
+load_dotenv()
+
+openai_key = os.getenv("OPENAI_API_KEY")
+# openai.api_key = 'your-api-key'
+client = openai.Client()
+
+
+def extract_toc_text(pdf_path, start_page=0, end_page=5):
+    """Extracts text from the table of contents pages."""
+    toc_text = ""
+    with fitz.open(pdf_path) as doc:
+        for page_num in range(start_page, min(end_page, len(doc))):
+            page = doc.load_page(page_num)
+            toc_text += page.get_text()
+
+    return toc_text
+
+def parse_toc(toc_text):
+    """Parses the raw ToC text into a dictionary of chapter titles and page numbers."""
+    toc_dict = {}
+    lines = toc_text.split('\n')
+    for line in lines:
+        if '\t' in line:  # Assuming a tab character separates chapter titles from page numbers
+            parts = line.rsplit('\t', 1)  # Split on the last tab character
+            if len(parts) == 2:
+                title, page = parts
+                toc_dict[title.strip()] = page.strip()
+    return toc_dict
+
+
+
+def extract_text_from_pdf(file_path):
+    """
+    Extract text from a PDF file and return it as a string.
+    """
+    text = ""
+    with open(file_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        for page in reader.pages:
+            text += page.extract_text()
+    return text
+
+
 
 
 def run_function(function_name, arguments):

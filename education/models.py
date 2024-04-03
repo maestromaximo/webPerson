@@ -2,6 +2,8 @@ import os
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
+from PyPDF2 import PdfReader
+from .utils import extract_toc_text, parse_toc
 
 # Enum choices for later use
 PROBLEM_TYPE_CHOICES = [
@@ -60,11 +62,37 @@ class Book(models.Model):
     page_count = models.IntegerField()
     related_class = models.OneToOneField(Class, on_delete=models.SET_NULL, null=True, blank=True, related_name='book')
 
-    def __str__(self):
-        return self.title
-    
+    def update_index_from_pdf(self):
+        """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
+        if self.pdf:
+            pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
+            toc_text = extract_toc_text(pdf_path)
+            self.index_contents = parse_toc(toc_text)
+
+    def set_page_count(self):
+        """Sets the page count from the PDF file."""
+        if self.pdf and self.page_count <= 1:
+            # Construct the full path to the PDF file
+            pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
+            try:
+                reader = PdfReader(pdf_path)
+                self.page_count = len(reader.pages)
+            except Exception as e:
+                print(f"Error reading PDF file: {e}")
+                self.page_count = 0
+
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title)
+        # Call set_page_count only if pdf is provided and page_count is not set
+        if not self.page_count:
+            self.set_page_count()
+
+        if not self.index_contents:
+            self.update_index_from_pdf()
+        # self.update_index_from_pdf()
+        
+        # Automatically generate slug from title
+        if not self.slug and self.title:
+            self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
 class Lesson(models.Model):
