@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 import openai
 from .models import ChatModel, ChatSession, Message, Profile, Documenter
-from .utils import transcribe_audio_with_whisper
+from .utils import transcribe_audio_with_whisper, generate_chat_completion
 from django.conf import settings
 
 # Load environment variables from .env file
@@ -263,33 +263,51 @@ def logout_view(request):
 @login_required
 def documenter(request):
     if request.method == 'POST' and 'code-title' in request.POST and request.POST['code-title'].strip():
+       
         title = request.POST['code-title'].strip()
         slug = slugify(title)
-        # Find or create a Documenter object
-        documenter, created = Documenter.objects.get_or_create(title=title, defaults={'title': title,'slug': slug})
+        documenter, created = Documenter.objects.get_or_create(title=title, defaults={'title': title, 'slug': slug})
 
         # Define the paths where the audio files are stored
         AUDIO_FILES_DIRECTORY = settings.AUDIO_FILES_DIRECTORY
-        paths = {
-            'runbook': os.path.join(AUDIO_FILES_DIRECTORY, 'runbook.mp3'),
-            'dependencies': os.path.join(AUDIO_FILES_DIRECTORY, 'dependencies.mp3'),
-            'functions': os.path.join(AUDIO_FILES_DIRECTORY, 'functions.mp3'),
-            'general': os.path.join(AUDIO_FILES_DIRECTORY, 'general.mp3'),
-            'notes': os.path.join(AUDIO_FILES_DIRECTORY, 'notes.mp3'),
-        }
+        sections = ['runbook', 'dependencies', 'functions', 'general', 'notes']
+        summaries = {}
 
-        # Transcribe and update for each section
-        for section, filepath in tqdm(paths.items(), desc="Transcribing audio"):
+        for section in sections:
+            filepath = os.path.join(AUDIO_FILES_DIRECTORY, f"{section}.mp3")
             if os.path.exists(filepath):
-                # Transcribe the audio file
                 transcription = transcribe_audio_with_whisper(filepath)
-
-                # Save the transcription to the appropriate field in the Documenter model
                 setattr(documenter, f'raw_{section}_transcript', transcription)
-                # Remember to delete the file after processing
                 os.remove(filepath)
 
-        # Save all changes to the Documenter object
+                # Generate summaries using the raw transcript
+                if section == 'functions':
+                    prompt = f"Provided is a transcription of the list of functions from  script and their descriptions. Please summarize each of the functions and their purposes and return ONLY a list with the summaries of each function, do not add any other message. \n\nTranscription: {transcription}"
+                elif section == 'runbook':
+                    prompt = f"Provided is a transcription of how to run a specified script. Please summarize it in lenght to a runbook. \n\nTranscription: {transcription}"
+                elif section == 'dependencies':
+                    prompt = f"Provided is a transcription of the dependencies and or imports of a script. Please provide a simple list NOTHING ELSE where on each line you state the packages dependencies or imports nessesary for this script . \n\nTranscription: {transcription}"
+                elif section == 'general':
+                    prompt = f"Provided is a transcription of the general description of a script. Please summarize it in lenght to a general summary of it. \n\nTranscription: {transcription}"
+                
+                response = generate_chat_completion(prompt, use_gpt4=False)
+                summaries[section] = response
+
+
+        # Save summaries to the model
+        documenter.summarized_runbook = summaries.get('runbook', '')
+        documenter.summarized_dependencies = summaries.get('dependencies', '')
+        documenter.general_summary = summaries.get('general', '')
+        documenter.functions = summaries.get('functions', '')
+
+        final_runbook_prompt = f"Here provided are the description of a script, its functions, dependencies and a draft short runbook. Please aggreagate all of this information to generate a long, final Runbook, write as much as possible, here is the information: \n\nGeneral Description: {documenter.general_summary}\n\nFunctions: {documenter.functions}\n\nDependencies: {documenter.summarized_dependencies}\n\nDraft runbook: {documenter.summarized_runbook}"
+        final_runbook_response = generate_chat_completion(final_runbook_prompt, use_gpt4=False)
+        documenter.final_runbook = final_runbook_response
+
+        final_documentation_prompt = f"Here provided are the description of a script, its functions, dependencies, notes and a runbook. Please aggreagate all of this information to generate a long, final Documentation, write as much as possible, here is the information: \n\nGeneral Description: {documenter.general_summary}\n\nFunctions: {documenter.functions}\n\nDependencies: {documenter.summarized_dependencies}\n\nNotes: {documenter.raw_notes_transcript}\n\nRunbook: {documenter.final_runbook}"
+        final_documentation_response = generate_chat_completion(final_documentation_prompt, use_gpt4=False)
+        documenter.final_documentation = final_documentation_response
+
         documenter.save()
 
         context = {
