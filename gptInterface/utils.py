@@ -22,7 +22,7 @@ def transcribe_audio_with_whisper(filepath, language='en'):
             language=language
         )
     # print('transcript_response:', transcript_response)
-    return transcript_response
+    return transcript_response.text
    
 
 # Example usage:
