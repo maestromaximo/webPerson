@@ -5,6 +5,7 @@ import openai
 import json
 import subprocess
 import fitz  # PyMuPDF
+import re
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -37,7 +38,7 @@ def extract_toc_text(pdf_path, start_page=0, end_page=5):
 
     return toc_text
 
-def parse_toc(toc_text):
+def parse_tocV2(toc_text):
     """Parses the raw ToC text into a dictionary of chapter titles and page numbers."""
     toc_dict = {}
     lines = toc_text.split('\n')
@@ -47,6 +48,52 @@ def parse_toc(toc_text):
             if len(parts) == 2:
                 title, page = parts
                 toc_dict[title.strip()] = page.strip()
+    return toc_dict
+
+def parse_tocV3(raw_text):
+    toc_dict = {}
+    lines = raw_text.strip().split('\n')
+    
+    for line in lines:
+        # Identify lines ending with a page number: optional spaces, optional periods, mandatory number
+        if re.search(r'[\s.]*\d+\s*$', line):
+            # Separate title from page number
+            match = re.search(r'(.+?)[\s.]+(\d+)\s*$', line)
+            if match:
+                title = match.group(1).strip()
+                page = match.group(2).strip()
+                
+                # Populate the dictionary: title -> page
+                toc_dict[title] = page
+    
+    return toc_dict
+
+def parse_toc(raw_text):
+    toc_dict = {}
+    start_parsing = False
+    chapter_pattern = re.compile(r'^(\d+(\.\d+)*)\s+(.*?)\s+(\d+)$')
+
+    lines = raw_text.strip().split('\n')
+
+    for line in lines:
+        # Start parsing after "Contents" heading or similar logic
+        if 'Contents' in line:
+            start_parsing = True
+            continue
+        
+        if start_parsing:
+            # This pattern is designed to capture: chapter number, title, page number
+            # Adjusted to ignore lines without this pattern
+            match = chapter_pattern.search(line)
+            if match:
+                chapter_num = match.group(1).strip()
+                title = match.group(3).strip()
+                page = match.group(4).strip()
+
+                # Creating a structured key: "ChapterNum: Chapter Title"
+                key = f"{chapter_num}: {title}"
+                toc_dict[key] = page
+
     return toc_dict
 
 
