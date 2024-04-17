@@ -132,3 +132,38 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+    
+
+
+class Documenter(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Transcript text fields
+    raw_general_transcript = models.TextField(null=True, blank=True)
+    raw_functions_transcript = models.TextField(null=True, blank=True)
+    raw_notes_transcript = models.TextField(null=True, blank=True)
+    raw_runbook_transcript = models.TextField(null=True, blank=True)
+    raw_dependencies_transcript = models.TextField(null=True, blank=True)
+
+    #  field for functions
+    functions = models.TextField(null=True, blank=True) 
+
+    # Summary fields
+    summarized_runbook = models.TextField(null=True, blank=True)
+    summarized_dependencies = models.TextField(null=True, blank=True)
+    general_summary = models.TextField(null=True, blank=True)
+
+    # Final fields
+    final_runbook = models.TextField(null=True, blank=True)
+    final_documentation = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
