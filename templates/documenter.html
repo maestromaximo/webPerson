@@ -6,9 +6,10 @@
         <div class="flex flex-row gap-4">
             <h1 class="text-2xl font-bold mb-4">Documenter</h1>
             <div class="flex flex-row gap-4 justify-between"></div>
-                <input type="text" id="code-title" name="code-title" placeholder="Input the code title here" class="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <form id="save-form" method="POST"></form>
+                
+                <form id="save-form" method="POST">
                     {% csrf_token %}
+                    <input type="text" id="code-title" name="code-title" placeholder="Input the code title here" class="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <div>
                         <button type="submit" id="save-btn" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save</button>
                     </div>
