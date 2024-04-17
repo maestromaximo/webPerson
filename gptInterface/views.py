@@ -7,7 +7,9 @@ from django.http import JsonResponse
 from dotenv import load_dotenv
 import os
 import openai
-from .models import ChatModel, ChatSession, Message, Profile
+from .models import ChatModel, ChatSession, Message, Profile, Documenter
+from .utils import transcribe_audio_with_whisper
+from django.conf import settings
 
 # Load environment variables from .env file
 load_dotenv()
@@ -217,6 +219,8 @@ def chat(request, model=None):
 
 from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
+from django.utils.text import slugify
+from tqdm import tqdm
 
 @csrf_exempt
 def login_view(request):
@@ -252,3 +256,74 @@ def logout_view(request):
         return JsonResponse({'message': 'Logout successful'})
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+
+#######################
+
+@login_required
+def documenter(request):
+    if request.method == 'POST' and 'title' in request.POST and request.POST['title'].strip():
+        title = request.POST['code-title'].strip()
+        slug = slugify(title)
+        # Find or create a Documenter object
+        documenter, created = Documenter.objects.get_or_create(title=title, defaults={'title': title,'slug': slug})
+
+        # Define the paths where the audio files are stored
+        paths = {
+            'runbook': '/tmp/runbook.mp3',
+            'dependencies': '/tmp/dependencies.mp3',
+            'functions': '/tmp/functions.mp3',
+            'general': '/tmp/general.mp3',
+            'notes': '/tmp/notes.mp3',
+        }
+
+        # Transcribe and update for each section
+        for section, filepath in tqdm(paths.items(), desc="Transcribing audio"):
+            if os.path.exists(filepath):
+                # Transcribe the audio file
+                transcription = transcribe_audio_with_whisper(filepath)
+
+                # Save the transcription to the appropriate field in the Documenter model
+                setattr(documenter, f'raw_{section}_transcript', transcription)
+                # Remember to delete the file after processing
+                os.remove(filepath)
+
+        # Save all changes to the Documenter object
+        documenter.save()
+
+        return JsonResponse({'status': 'success', 'message': 'Documenter updated successfully'}, status=200)
+    else:
+        # This will be a GET request or a POST request without a title
+        context = {
+            'success': False,
+            'message': 'Title not provided or invalid request.' if request.method == 'POST' else '',
+        }
+        return render(request, 'documenter.html', context)
+
+
+@login_required
+@csrf_exempt
+def save_audio(request):
+    if request.method == 'POST':
+        audio_file = request.FILES.get('audio')
+        if audio_file:
+            # Ensure the audio recordings directory exists
+            os.makedirs(settings.AUDIO_FILES_DIRECTORY, exist_ok=True)
+
+            # Clean title and create filename
+            title = request.POST.get('title', 'untitled').replace(" ", "_")
+            filename = f"{title}.mp3"
+
+            # Full path where the audio file will be saved
+            temp_audio_path = os.path.join(settings.AUDIO_FILES_DIRECTORY, filename)
+
+            # Save the audio file
+            with open(temp_audio_path, 'wb+') as destination:
+                for chunk in audio_file.chunks():
+                    destination.write(chunk)
+
+            return JsonResponse({'status': 'success', 'path': temp_audio_path}, status=200)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'No audio file provided'}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)

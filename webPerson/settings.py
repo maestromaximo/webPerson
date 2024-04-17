@@ -20,6 +20,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 # In your settings.py
 TOOL_FILES_PATH = os.path.join(BASE_DIR, 'tools_main_repo/')
+AUDIO_FILES_DIRECTORY = os.path.join(BASE_DIR, 'media/audio/')
 if TOOL_FILES_PATH and not os.path.exists(TOOL_FILES_PATH):
             os.makedirs(TOOL_FILES_PATH, exist_ok=True)
 
