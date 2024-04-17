@@ -61,8 +61,7 @@
 </div>
 
 <script>
-    let mediaRecorder = null;
-    let audioChunks = [];
+    let mediaRecorders = {};
     let isRecording = false;
 
     function toggleRecording(sectionId) {
@@ -70,51 +69,54 @@
         const button = sectionElement.querySelector('.record-btn');
         const indicator = sectionElement.querySelector('.status-indicator');
 
-        if (!isRecording) {
+        if (!mediaRecorders[sectionId] || !isRecording) {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
-                    mediaRecorder = new MediaRecorder(stream);
+                    const mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorders[sectionId] = mediaRecorder;
                     mediaRecorder.start();
                     isRecording = true;
                     indicator.classList.replace('bg-red-500', 'bg-yellow-500');
                     button.textContent = 'Stop';
 
+                    const audioChunks = [];
                     mediaRecorder.addEventListener('dataavailable', event => {
                         audioChunks.push(event.data);
                     });
 
                     mediaRecorder.addEventListener('stop', () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                        saveRecording(audioBlob, sectionId);
                         indicator.classList.replace('bg-yellow-500', 'bg-green-500');
+                        isRecording = false;
+                        button.textContent = 'Record';
                     });
                 }).catch(error => {
                     console.error('Error accessing media devices.', error);
                 });
         } else {
-            mediaRecorder.stop();
-            isRecording = false;
-            button.textContent = 'Record';
+            mediaRecorders[sectionId].stop();
+            mediaRecorders[sectionId] = null;
         }
     }
 
-    function saveRecordings() {
-        if (audioChunks.length > 0) {
-            const title = document.getElementById('code-title').value;
-            const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.mp3');
-            formData.append('title', title);
+    function saveRecording(audioBlob, sectionId) {
+        const title = document.getElementById('code-title').value;
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+        formData.append('title', sectionId);
+        // formData.append('section', sectionId);
 
-            fetch('save-audio/', {
-                method: 'POST',
-                body: formData,
-                // headers: {
-                //     'X-CSRFToken': getCookie('csrftoken'), // Ensure you're getting the CSRF token correctly
-                // }
-            })
-            .then(response => response.json())
-            .then(data => console.log(data))
-            .catch(error => console.error('Error', error));
-        }
+        fetch('save-audio/', {
+            method: 'POST',
+            body: formData,
+            // headers: {
+            //     'X-CSRFToken': getCookie('csrftoken'), // Assuming you're handling CSRF correctly
+            // }
+        })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
     }
 
     function getCookie(name) {
