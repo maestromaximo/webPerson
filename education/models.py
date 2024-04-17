@@ -67,6 +67,7 @@ class Book(models.Model):
         if self.pdf:
             pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
             toc_text = extract_toc_text(pdf_path)
+            print('DEBIG: ', toc_text)
             self.index_contents = parse_toc(toc_text)
 
     def set_page_count(self):
