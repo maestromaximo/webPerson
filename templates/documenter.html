@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="flex flex-row gap-4 justify-between">
+        <div class="flex flex-row gap-4">
+            <h1 class="text-2xl font-bold mb-4">Documenter</h1>
+            <input type="text" id="code-title" name="code-title" placeholder="Input the code title here" class="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+            <button onclick="saveRecordings()" id="save-btn" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save</button>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border p-2 shadow-lg rounded-lg">
+
+        <!-- Runbook Section -->
+        <div class="border p-3 rounded-lg relative" id="runbook-section">
+            <div class="absolute top-0 right-0 mt-2 mr-2">
+                <span class="status-indicator block h-4 w-4 rounded-full bg-red-500"></span>
+            </div>
+            <h2 class="text-xl font-semibold">Runbook</h2>
+            <button onclick="toggleRecording('runbook')" class="record-btn mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
+        </div>
+
+        <!-- Dependencies Section -->
+        <div class="border p-3 rounded-lg relative" id="dependencies-section">
+            <div class="absolute top-0 right-0 mt-2 mr-2">
+                <span class="status-indicator block h-4 w-4 rounded-full bg-red-500"></span>
+            </div>
+            <h2 class="text-xl font-semibold">Dependencies (Important)</h2>
+            <button onclick="toggleRecording('dependencies')" class="record-btn mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
+        </div>
+
+        <!-- Functions Section -->
+        <div class="border p-3 rounded-lg relative" id="functions-section">
+            <div class="absolute top-0 right-0 mt-2 mr-2">
+                <span class="status-indicator block h-4 w-4 rounded-full bg-red-500"></span>
+            </div>
+            <h2 class="text-xl font-semibold">Functions</h2>
+            <button onclick="toggleRecording('functions')" class="record-btn mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
+        </div>
+
+        <!-- General Section -->
+        <div class="border p-3 rounded-lg relative" id="general-section">
+            <div class="absolute top-0 right-0 mt-2 mr-2">
+                <span class="status-indicator block h-4 w-4 rounded-full bg-red-500"></span>
+            </div>
+            <h2 class="text-xl font-semibold">General</h2>
+            <button onclick="toggleRecording('general')" class="record-btn mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="border p-3 rounded-lg relative col-span-2" id="notes-section">
+            <div class="absolute top-0 right-0 mt-2 mr-2">
+                <span class="status-indicator block h-4 w-4 rounded-full bg-red-500"></span>
+            </div>
+            <h2 class="text-xl font-semibold">Notes</h2>
+            <button onclick="toggleRecording('notes')" class="record-btn mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    function toggleRecording(sectionId) {
+        const sectionElement = document.querySelector(`#${sectionId}-section`);
+        const button = sectionElement.querySelector('.record-btn');
+        const indicator = sectionElement.querySelector('.status-indicator');
+
+        if (!isRecording) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+                    isRecording = true;
+                    indicator.classList.replace('bg-red-500', 'bg-yellow-500');
+                    button.textContent = 'Stop';
+
+                    mediaRecorder.addEventListener('dataavailable', event => {
+                        audioChunks.push(event.data);
+                    });
+
+                    mediaRecorder.addEventListener('stop', () => {
+                        indicator.classList.replace('bg-yellow-500', 'bg-green-500');
+                    });
+                }).catch(error => {
+                    console.error('Error accessing media devices.', error);
+                });
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            button.textContent = 'Record';
+        }
+    }
+
+    function saveRecordings() {
+        if (audioChunks.length > 0) {
+            const title = document.getElementById('code-title').value;
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.mp3');
+            formData.append('title', title);
+
+            fetch('save-audio/', {
+                method: 'POST',
+                body: formData,
+                // headers: {
+                //     'X-CSRFToken': getCookie('csrftoken'), // Ensure you're getting the CSRF token correctly
+                // }
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error', error));
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+{% endblock %}
+
