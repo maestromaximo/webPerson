@@ -1,5 +1,5 @@
 import json
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -314,6 +314,7 @@ def documenter(request):
             'success': True,
             'message': 'Documenter updated successfully',
         }
+        return redirect('view_documenter', slug=documenter.slug)
         return render(request, 'documenter.html', context)
         # return JsonResponse({'status': 'success', 'message': 'Documenter updated successfully'}, status=200)
     elif request.method == 'POST' and 'code-title' not in request.POST:
@@ -353,3 +354,7 @@ def save_audio(request):
             return JsonResponse({'status': 'error', 'message': 'No audio file provided'}, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+def view_documenter(request, slug):
+    documenter = get_object_or_404(Documenter, slug=slug)
+    return render(request, 'view_documenter.html', {'documenter': documenter})

@@ -8,6 +8,7 @@ urlpatterns = [
     path('chat/<slug:model>', views.chat, name='chat'),
 
     path('documenter/', views.documenter, name='documenter'),
+    path('documenter/<slug:slug>/', views.view_documenter, name='view_documenter'),
     path('documenter/save-audio/', views.save_audio, name='save_audio'),
 
     path('login/', views.login_view, name='login'),
