@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChatModel, ChatSession, Message, Profile
+from .models import ChatModel, ChatSession, Documenter, Message, Profile
 
 # Already defined ChatModelAdmin
 @admin.register(ChatModel)
@@ -48,5 +48,43 @@ class ProfileAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': ('user', 'profile_picture', 'username', 'name', 'email', 'phone', 'access_level', 'usage_costs', 'api_rate_hourly', 'password', 'bio'),
+        }),
+    )
+
+
+
+@admin.register(Documenter)
+class DocumenterAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_at', 'updated_at')
+    search_fields = ('title',)
+    prepopulated_fields = {'slug': ('title',)}
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        ('General Information', {
+            'fields': ('title', 'slug', 'created_at', 'updated_at')
+        }),
+        ('Transcripts', {
+            'fields': (
+                'raw_general_transcript',
+                'raw_functions_transcript',
+                'raw_notes_transcript',
+                'raw_runbook_transcript',
+                'raw_dependencies_transcript',
+            )
+        }),
+        ('Summaries', {
+            'fields': (
+                'summarized_runbook',
+                'summarized_dependencies',
+                'general_summary',
+            )
+        }),
+        ('Final Documents', {
+            'fields': ('final_runbook', 'final_documentation')
+        }),
+        ('JSON Data', {
+            'fields': ('functions',),
+            # 'classes': ('collapse',)  # This will make the JSON field collapsible
         }),
     )
