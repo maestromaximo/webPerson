@@ -262,7 +262,7 @@ def logout_view(request):
 
 @login_required
 def documenter(request):
-    if request.method == 'POST' and 'title' in request.POST and request.POST['title'].strip():
+    if request.method == 'POST' and 'code-title' in request.POST and request.POST['code-title'].strip():
         title = request.POST['code-title'].strip()
         slug = slugify(title)
         # Find or create a Documenter object
