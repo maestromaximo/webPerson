@@ -14,14 +14,16 @@ def transcribe_audio_with_whisper(filepath, language='en'):
     Returns:
     dict: The transcription response object.
     """
+    print('in transcribe_audio_with_whisper')
     with open(filepath, "rb") as audio_file:
         transcript_response = client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
             language=language
         )
-
+    # print('transcript_response:', transcript_response)
     return transcript_response
+   
 
 # Example usage:
 # filepath = 'path/to/your/audiofile.mp3'

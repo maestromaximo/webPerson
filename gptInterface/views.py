@@ -269,12 +269,13 @@ def documenter(request):
         documenter, created = Documenter.objects.get_or_create(title=title, defaults={'title': title,'slug': slug})
 
         # Define the paths where the audio files are stored
+        AUDIO_FILES_DIRECTORY = settings.AUDIO_FILES_DIRECTORY
         paths = {
-            'runbook': '/tmp/runbook.mp3',
-            'dependencies': '/tmp/dependencies.mp3',
-            'functions': '/tmp/functions.mp3',
-            'general': '/tmp/general.mp3',
-            'notes': '/tmp/notes.mp3',
+            'runbook': os.path.join(AUDIO_FILES_DIRECTORY, 'runbook.mp3'),
+            'dependencies': os.path.join(AUDIO_FILES_DIRECTORY, 'dependencies.mp3'),
+            'functions': os.path.join(AUDIO_FILES_DIRECTORY, 'functions.mp3'),
+            'general': os.path.join(AUDIO_FILES_DIRECTORY, 'general.mp3'),
+            'notes': os.path.join(AUDIO_FILES_DIRECTORY, 'notes.mp3'),
         }
 
         # Transcribe and update for each section
@@ -291,7 +292,14 @@ def documenter(request):
         # Save all changes to the Documenter object
         documenter.save()
 
-        return JsonResponse({'status': 'success', 'message': 'Documenter updated successfully'}, status=200)
+        context = {
+            'success': True,
+            'message': 'Documenter updated successfully',
+        }
+        return render(request, 'documenter.html', context)
+        # return JsonResponse({'status': 'success', 'message': 'Documenter updated successfully'}, status=200)
+    elif request.method == 'POST' and 'code-title' not in request.POST:
+        print('No title, no action done')
     else:
         # This will be a GET request or a POST request without a title
         context = {
