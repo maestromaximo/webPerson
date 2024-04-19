@@ -3,7 +3,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 from PyPDF2 import PdfReader
-from .utils import extract_toc_text, parse_toc
+from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc
 
 # Enum choices for later use
 PROBLEM_TYPE_CHOICES = [
@@ -62,14 +62,23 @@ class Book(models.Model):
     page_count = models.IntegerField()
     related_class = models.OneToOneField(Class, on_delete=models.SET_NULL, null=True, blank=True, related_name='book')
 
+    # def update_index_from_pdf(self):
+    #     """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
+    #     if self.pdf:
+    #         pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
+    #         toc_text = extract_toc_text(pdf_path)
+    #         print('DEBIG: ', toc_text)
+    #         self.index_contents = parse_toc(toc_text)
     def update_index_from_pdf(self):
         """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
-        if self.pdf:
-            pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
-            toc_text = extract_toc_text(pdf_path)
-            print('DEBIG: ', toc_text)
-            self.index_contents = parse_toc(toc_text)
-
+        pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
+        first_page, first_title, first_page_number = find_first_toc_page(pdf_path)
+        if first_page != -1:
+            toc_dict = extract_toc_until_page(pdf_path, first_page_number)
+            self.index_contents = str(toc_dict)
+        else:
+            self.index_contents = "No ToC found"
+            
     def set_page_count(self):
         """Sets the page count from the PDF file."""
         if self.pdf and self.page_count <= 1:

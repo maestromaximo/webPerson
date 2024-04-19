@@ -109,6 +109,47 @@ def extract_text_from_pdf(file_path):
             text += page.extract_text()
     return text
 
+def extract_text_by_page(pdf_path, page_number):
+    """Extract text from a specific page of the PDF file."""
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        if page_number < len(reader.pages):
+            page = reader.pages[page_number]
+            return page.extract_text()
+        else:
+            return None
+        
+
+def find_first_toc_page(pdf_path, max_pages=20, separators=['-', '.', '\s', '*']):
+    """Finds the first page containing a title-page pair."""
+    separator_pattern = "[" + "".join(separators) + "]+"
+    regex_pattern = rf'(.+?){separator_pattern}(\d+)$'
+
+    for page_number in range(min(max_pages, len(PyPDF2.PdfReader(pdf_path).pages))):
+        text = extract_text_by_page(pdf_path, page_number)
+        if text:
+            match = re.search(regex_pattern, text, re.MULTILINE)
+            if match:
+                return page_number, match.group(1).strip(), int(match.group(2))
+    return -1, None, None
+
+def extract_toc_until_page(pdf_path, end_page, separators=['-', '.', '\s', '*']):
+    """Extracts the table of contents up to a certain page number."""
+    separator_pattern = "[" + "".join(separators) + "]+"
+    regex_pattern = rf'(.+?){separator_pattern}(\d+)$'
+    toc_dict = {}
+
+    for page_number in range(end_page):
+        text = extract_text_by_page(pdf_path, page_number)
+        if text:
+            for line in text.split('\n'):
+                match = re.search(regex_pattern, line)
+                if match:
+                    title = match.group(1).strip()
+                    page = int(match.group(2))
+                    toc_dict[title] = page
+
+    return toc_dict
 
 
 
