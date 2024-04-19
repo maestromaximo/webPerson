@@ -61,14 +61,8 @@ class Book(models.Model):
     index_contents = models.TextField(null=True, blank=True)
     page_count = models.IntegerField()
     related_class = models.OneToOneField(Class, on_delete=models.SET_NULL, null=True, blank=True, related_name='book')
-
-    # def update_index_from_pdf(self):
-    #     """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
-    #     if self.pdf:
-    #         pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
-    #         toc_text = extract_toc_text(pdf_path)
-    #         print('DEBIG: ', toc_text)
-    #         self.index_contents = parse_toc(toc_text)
+    page_offset = models.IntegerField(default=0, help_text="The page number of the first page in the book from where the page count starts, for example page 1 could start counting on the physical page 7, after the preface.")
+   
     def update_index_from_pdf(self):
         """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
         pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
