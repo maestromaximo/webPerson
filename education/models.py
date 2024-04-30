@@ -1,8 +1,10 @@
 import os
+import re
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 from PyPDF2 import PdfReader
+import pdfplumber
 from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc
 
 # Enum choices for later use
@@ -58,26 +60,73 @@ class Book(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(null=True, blank=True)
     pdf = models.FileField(upload_to='books/')
-    index_contents = models.TextField(null=True, blank=True)
+    index_contents = models.JSONField(null=True, blank=True)
     page_count = models.IntegerField()
     related_class = models.OneToOneField(Class, on_delete=models.SET_NULL, null=True, blank=True, related_name='book')
     page_offset = models.IntegerField(default=0, help_text="The page number of the first page in the book from where the page count starts, for example page 1 could start counting on the physical page 7, after the preface.")
    
-    def update_index_from_pdf(self):
+    
+    def update_index_from_pdf(self, skip_from_page=2, continuous=True):
         """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
         pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
-        first_page, first_title, first_page_number = find_first_toc_page(pdf_path)
-        if first_page != -1:
-            toc_dict = extract_toc_until_page(pdf_path, first_page_number)
+        toc_dict = find_first_toc_page(pdf_path, skip_from_page=skip_from_page, continuous=continuous)
+        if toc_dict:
             self.index_contents = str(toc_dict)
         else:
-            self.index_contents = "No ToC found"
-            
+            self.index_contents = {}
+
+
+    # def extract_footer_text(self, pdf_path, page_number):
+    #     """Extract text from the footer of a specific page of the PDF file."""
+    #     with open(pdf_path, "rb") as file:
+    #         reader = PdfReader(file)
+    #         if page_number < len(reader.pages):
+    #             page = reader.pages[page_number]
+    #             # Define the footer area (may need to adjust coordinates)
+    #             # For PyPDF2, this will adjust the crop box to only include the bottom part of the page
+    #             media_box = page.mediabox
+    #             footer_height = media_box[3] * 0.2  # Adjust the 0.2 if necessary for footer height
+    #             page.cropbox.lower_left = (media_box[0], media_box[1])
+    #             page.cropbox.upper_right = (media_box[2], media_box[1] + footer_height)
+    #             return page.extract_text()
+    #         else:
+    #             return None
+    def extract_footer_text(self, pdf_path, page_number, footer_height=0.09):
+        """Extract text from the footer of a specific page of the PDF file using pdfplumber."""
+        with pdfplumber.open(pdf_path) as pdf:
+            if page_number < len(pdf.pages):
+                page = pdf.pages[page_number]
+                # Define the footer area
+                width = page.width
+                height = page.height
+                if footer_height > 1:
+                    footer_height = 1
+                elif footer_height < 0:
+                    footer_height = 0
+                footer = page.crop((0, height * (1-footer_height), width, height))  # Crop to the specified footer height
+                return footer.extract_text()
+            else:
+                return None
+
+    def find_page_offset(self):
+        """Finds the page offset by detecting where the number '1' first appears in the footer."""
+        pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
+        num_pages = len(PdfReader(pdf_path).pages)
+        
+        for i in range(num_pages):
+            footer_text = self.extract_footer_text(pdf_path, i)
+            # input(f'test input hit enter to continue {footer_text}')
+            if footer_text and re.search(r'\b1\b', footer_text):  # Look for isolated '1'
+                self.page_offset = i  # Page where '1' is found is the physical '1'
+                return
+
+        self.page_offset = 0  # If '1' is not found, assume no offset
+
     def set_page_count(self):
         """Sets the page count from the PDF file."""
         if self.pdf and self.page_count <= 1:
             # Construct the full path to the PDF file
-            pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
+            pdf_path = os.path.join(settings.MEDIA_ROOT, "books", self.pdf.name)
             try:
                 reader = PdfReader(pdf_path)
                 self.page_count = len(reader.pages)
@@ -90,6 +139,9 @@ class Book(models.Model):
         if not self.page_count:
             self.set_page_count()
 
+        if self.page_offset == 0:
+            self.find_page_offset()
+
         if not self.index_contents:
             self.update_index_from_pdf()
         # self.update_index_from_pdf()
@@ -98,6 +150,9 @@ class Book(models.Model):
         if not self.slug and self.title:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title if self.title else "Unnamed Book"
 
 class Lesson(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)

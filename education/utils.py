@@ -120,18 +120,40 @@ def extract_text_by_page(pdf_path, page_number):
             return None
         
 
-def find_first_toc_page(pdf_path, max_pages=20, separators=['-', '.', '\s', '*']):
-    """Finds the first page containing a title-page pair."""
+def find_first_toc_page(pdf_path, max_pages=20, separators=['-', '.', '\s', '*'], skip_from_page=1, continuous=True):
+    """Finds pages containing title-page pairs and can continue extracting based on the continuous flag."""
     separator_pattern = "[" + "".join(separators) + "]+"
     regex_pattern = rf'(.+?){separator_pattern}(\d+)$'
+    toc_dict = {}  # Initializing the dictionary to store ToC entries
+    num_pages = len(PyPDF2.PdfReader(pdf_path).pages)
+    end_page = min(num_pages, max_pages)
+    consecutive_non_matches = 0
+    found_matches = False
 
-    for page_number in range(min(max_pages, len(PyPDF2.PdfReader(pdf_path).pages))):
+    for page_number in range(skip_from_page - 1, end_page):
         text = extract_text_by_page(pdf_path, page_number)
         if text:
-            match = re.search(regex_pattern, text, re.MULTILINE)
-            if match:
-                return page_number, match.group(1).strip(), int(match.group(2))
-    return -1, None, None
+            matches_on_page = False
+            for line in text.split('\n'):
+                match = re.search(regex_pattern, line, re.MULTILINE)
+                if match:
+                    title = match.group(1).strip()
+                    page = int(match.group(2))
+                    toc_dict[title] = page
+                    matches_on_page = True
+                    found_matches = True  # Flag to indicate we found at least one match
+
+            if continuous:
+                if not matches_on_page:
+                    consecutive_non_matches += 1  # Count pages with no matches
+                    if consecutive_non_matches > 0:
+                        break  # Break if a full page without matches is found
+            elif found_matches and not continuous:
+                break  # Stop after first page with matches if not in continuous mode
+
+    return toc_dict if found_matches else {}
+
+
 
 def extract_toc_until_page(pdf_path, end_page, separators=['-', '.', '\s', '*']):
     """Extracts the table of contents up to a certain page number."""
