@@ -6,6 +6,8 @@ import json
 import subprocess
 import fitz  # PyMuPDF
 import re
+from pinecone import Pinecone
+
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -26,6 +28,10 @@ load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
 # openai.api_key = 'your-api-key'
 client = openai.Client()
+pc_api_key = os.getenv("PINECONE_API_KEY")
+pc_index_name = "websiteindex"
+pc = Pinecone(api_key=pc_api_key)
+index = pc.Index(pc_index_name)
 
 
 def extract_toc_text(pdf_path, start_page=0, end_page=5):
