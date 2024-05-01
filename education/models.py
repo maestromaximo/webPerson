@@ -5,7 +5,7 @@ from django.db import models
 from django.utils.text import slugify
 from PyPDF2 import PdfReader
 import pdfplumber
-from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc
+from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index
 
 # Enum choices for later use
 PROBLEM_TYPE_CHOICES = [
@@ -64,7 +64,7 @@ class Book(models.Model):
     page_count = models.IntegerField()
     related_class = models.OneToOneField(Class, on_delete=models.SET_NULL, null=True, blank=True, related_name='book')
     page_offset = models.IntegerField(default=0, help_text="The page number of the first page in the book from where the page count starts, for example page 1 could start counting on the physical page 7, after the preface.")
-   
+    embedded = models.BooleanField(default=False, help_text="If the book is embedded in the website, set this to True.")
     
     def update_index_from_pdf(self, skip_from_page=2, continuous=True):
         """Updates the index_contents field by extracting and parsing the ToC from the PDF."""
@@ -75,22 +75,6 @@ class Book(models.Model):
         else:
             self.index_contents = {}
 
-
-    # def extract_footer_text(self, pdf_path, page_number):
-    #     """Extract text from the footer of a specific page of the PDF file."""
-    #     with open(pdf_path, "rb") as file:
-    #         reader = PdfReader(file)
-    #         if page_number < len(reader.pages):
-    #             page = reader.pages[page_number]
-    #             # Define the footer area (may need to adjust coordinates)
-    #             # For PyPDF2, this will adjust the crop box to only include the bottom part of the page
-    #             media_box = page.mediabox
-    #             footer_height = media_box[3] * 0.2  # Adjust the 0.2 if necessary for footer height
-    #             page.cropbox.lower_left = (media_box[0], media_box[1])
-    #             page.cropbox.upper_right = (media_box[2], media_box[1] + footer_height)
-    #             return page.extract_text()
-    #         else:
-    #             return None
     def extract_footer_text(self, pdf_path, page_number, footer_height=0.09):
         """Extract text from the footer of a specific page of the PDF file using pdfplumber."""
         with pdfplumber.open(pdf_path) as pdf:
@@ -134,21 +118,31 @@ class Book(models.Model):
                 print(f"Error reading PDF file: {e}")
                 self.page_count = 0
 
+    def embed_and_upload(self):
+        """Embed the book text and upload the embeddings to Pinecone."""
+        if not self.embedded:
+            pdf_path = self.pdf.path  # Adjust based on your actual storage settings
+            book_name_slug = self.slug or slugify(self.title)
+            # input(f'DEBUG: Uploading book to index this is the path {pdf_path}')
+            upload_book_to_index(pdf_path, book_name_slug)
+            self.embedded = True
+            self.save()
+
     def save(self, *args, **kwargs):
         # Call set_page_count only if pdf is provided and page_count is not set
-        if not self.page_count:
-            self.set_page_count()
 
-        if self.page_offset == 0:
-            self.find_page_offset()
-
-        if not self.index_contents:
-            self.update_index_from_pdf()
-        # self.update_index_from_pdf()
-        
         # Automatically generate slug from title
         if not self.slug and self.title:
             self.slug = slugify(self.title)
+        if not self.page_count:
+            self.set_page_count()
+        if self.page_offset == 0:
+            self.find_page_offset()
+        if not self.index_contents:
+            self.update_index_from_pdf()
+        # self.update_index_from_pdf()
+        self.embed_and_upload()
+        
         super().save(*args, **kwargs)
 
     def __str__(self):

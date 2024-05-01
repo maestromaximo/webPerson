@@ -7,7 +7,8 @@ import subprocess
 import fitz  # PyMuPDF
 import re
 from pinecone import Pinecone
-
+from tqdm import tqdm
+import itertools
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -28,10 +29,13 @@ load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
 # openai.api_key = 'your-api-key'
 client = openai.Client()
+
+## Pinecone API
 pc_api_key = os.getenv("PINECONE_API_KEY")
 pc_index_name = "websiteindex"
 pc = Pinecone(api_key=pc_api_key)
-index = pc.Index(pc_index_name)
+pc_index = pc.Index(pc_index_name)
+## Pinecone API
 
 
 def extract_toc_text(pdf_path, start_page=0, end_page=5):
@@ -336,3 +340,120 @@ def query_openai_with_tools(query, context=None, model="gpt-3.5-turbo", force_to
 #         user_input = input("You: ")
 #         response, context = query_openai_with_tools(user_input, context=context, tools_list=test_tool)
 #         print("AI: ", response)
+
+
+## embending
+
+##A key note for this fucntion is that we will be feeding it both mathematical text as well as the text from the pdf file, not sure if fourmulas will carry meaning in the text-embedding-3-large model
+def generate_embedding(text, model="text-embedding-3-large"):
+    """
+    Generate an embedding for the given text using the specified model.
+    :param text: The input text to embed.
+    :param model: The name of the model to use for embedding.
+    :return: The embedding vector for the input text.
+    """
+    response = client.embeddings.create(
+        input=text,
+        model=model
+    )
+
+    return response.data[0].embedding
+
+## embending
+
+def chunk_text_advanced(text, min_words=310, max_words=1200, use_separators=True, context_window=100):
+    """Chunk the text intelligently with options for using separators and adding context windows."""
+    chunks = []
+    if use_separators:
+        # Split by newlines to get paragraphs
+        paragraphs = text.split('\n')
+    else:
+        # Treat the entire text as one single block and split by whitespace
+        paragraphs = [' '.join(text.split())]
+
+    current_chunk = []
+    current_word_count = 0
+    paragraph_count = len(paragraphs)
+
+    for paragraph in tqdm(paragraphs, desc=f"Processing/chunking/paragraphs, separators={use_separators},len={paragraph_count}"):
+        words = paragraph.split()
+        for word in words:
+            current_chunk.append(word)
+            current_word_count += 1
+
+            if current_word_count >= min_words:
+                if current_word_count + len(words) > max_words:
+                    # Slice the current chunk to not exceed the maximum word count
+                    excess_words = (current_word_count + len(words)) - max_words
+                    final_chunk = current_chunk[:-excess_words]
+                else:
+                    final_chunk = current_chunk[:]
+
+                # Converting list back to string and managing context window
+                chunk_str = ' '.join(add_context_window(final_chunk, words, context_window))
+                chunks.append(chunk_str)
+                # Reset the chunk
+                current_chunk = []
+                current_word_count = 0
+
+    # Handle the last chunk if it meets the minimum words criteria
+    if current_word_count >= min_words:
+        chunk_str = ' '.join(add_context_window(current_chunk, words, context_window))
+        chunks.append(chunk_str)
+
+    return chunks
+
+def add_context_window(chunk, remaining_words, context_window):
+    """Add context window words to the beginning and end of the chunk."""
+    start_context = max(0, len(chunk) - context_window)
+    end_context = min(len(remaining_words), context_window)
+    return chunk[start_context:] + remaining_words[:end_context]
+
+
+def embed_book_text(pdf_path, min_words=310, max_words=1200, use_separators=True, context_window=100, model="text-embedding-3-large"):
+    """Embed the text from a PDF book, chunk the text, and generate embeddings for each chunk."""
+    # Extract text from the PDF
+    text = extract_text_from_pdf(pdf_path)
+
+    # Chunk the text into smaller parts
+    chunks = chunk_text_advanced(text, min_words=min_words, max_words=max_words, use_separators=use_separators, context_window=context_window)
+
+    # Generate embeddings for each chunk
+    vectors = []
+    for i, chunk in enumerate(tqdm(chunks, desc="Generating embeddings")):
+        embedding = generate_embedding(chunk, model=model)
+        # Append the embedding with an ID
+        vectors.append({"id": str(i + 1), "values": embedding})
+
+    return vectors
+
+
+
+
+## Pinecone integration
+
+
+def chunks(iterable, batch_size=100):
+    """A helper function to break an iterable into chunks of size batch_size."""
+    it = iter(iterable)
+    chunk = tuple(itertools.islice(it, batch_size))
+    while chunk:
+        yield chunk
+        chunk = tuple(itertools.islice(it, batch_size))
+
+def upload_book_to_index(pdf_path, book_name_slug):
+    """Upload the text from a PDF book to the Pinecone index asynchronously."""
+    vector_embeddings = embed_book_text(pdf_path)  # Assuming this returns a list of {"id": "1", "values": [0.1, ...]}
+
+    # Chunk embeddings and upsert them in parallel
+    pc_parallel = Pinecone(api_key=pc_api_key, pool_threads=30)
+    index_parallel = pc_parallel.Index(pc_index_name)
+    for embeddings_chunk in chunks(vector_embeddings, batch_size=100):
+        index_parallel.upsert(vectors=[(item['id'], item['values']) for item in embeddings_chunk], async_req=True, namespace=book_name_slug.lower())
+
+    # Optionally, handle results if needed (shown in the example for async handling)
+    # results = [result.get() for result in async_results] # Uncomment if you need to process results
+    print("Book embeddings uploaded to Pinecone index.")  # Confirm completion
+
+
+## Pinecone integration
