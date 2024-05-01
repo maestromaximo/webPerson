@@ -453,14 +453,15 @@ def upload_book_to_index(pdf_path, book_name_slug):
 
     print("Book embeddings with metadata uploaded to Pinecone index.")
 
-def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embedding-3-large"):
+def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embedding-3-large", namespace=None):
     """
-    Query Pinecone index with either a text string or a vector, returning text metadata and scores.
+    Query Pinecone index with either a text string or a vector, specifying an optional namespace.
     :param query: Text to embed or a vector.
     :param embed: Boolean indicating whether the query is a text that needs embedding.
     :param top_k: Number of top results to return.
     :param return_top: If True, return only the top result with the highest score; otherwise, return all top_k results.
     :param model: The model to use for text embedding.
+    :param namespace: The namespace within the Pinecone index to query.
     """
     if embed:
         # Generate an embedding if the input is text
@@ -469,8 +470,17 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
         # Assume the input is already a vector
         query_vector = query
 
-    # Query Pinecone with metadata inclusion
-    results = pc_index.query(queries=[query_vector], top_k=top_k, include_metadata=True)
+    # Prepare query options
+    query_options = {
+        "queries": [query_vector],
+        "top_k": top_k,
+        "include_metadata": True
+    }
+    if namespace:
+        query_options["namespace"] = namespace
+
+    # Query Pinecone with metadata inclusion and optional namespace
+    results = pc_index.query(**query_options)
 
     # Extract the IDs, scores, and text from the top results
     matches = results['matches']
@@ -486,6 +496,7 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
     else:
         # Return all top_k results
         return sorted_results
+
 
 
 
