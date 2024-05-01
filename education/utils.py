@@ -411,21 +411,18 @@ def add_context_window(chunk, remaining_words, context_window):
 
 
 def embed_book_text(pdf_path, min_words=310, max_words=1200, use_separators=True, context_window=100, model="text-embedding-3-large"):
-    """Embed the text from a PDF book, chunk the text, and generate embeddings for each chunk."""
-    # Extract text from the PDF
-    text = extract_text_from_pdf(pdf_path)
-
-    # Chunk the text into smaller parts
+    """Embed the text from a PDF book, chunk the text, and generate embeddings for each chunk with associated text."""
+    text = extract_text_from_pdf(pdf_path)  # Extract text from the PDF
     chunks = chunk_text_advanced(text, min_words=min_words, max_words=max_words, use_separators=use_separators, context_window=context_window)
-
-    # Generate embeddings for each chunk
+    
     vectors = []
     for i, chunk in enumerate(tqdm(chunks, desc="Generating embeddings")):
         embedding = generate_embedding(chunk, model=model)
-        # Append the embedding with an ID
-        vectors.append({"id": str(i + 1), "values": embedding})
+        # Append the embedding with an ID and include the chunk text as metadata
+        vectors.append({"id": str(i + 1), "vector": embedding, "text": chunk})
 
     return vectors
+
 
 
 
@@ -448,12 +445,48 @@ def upload_book_to_index(pdf_path, book_name_slug):
     # Chunk embeddings and upsert them in parallel
     pc_parallel = Pinecone(api_key=pc_api_key, pool_threads=30)
     index_parallel = pc_parallel.Index(pc_index_name)
+    
     for embeddings_chunk in chunks(vector_embeddings, batch_size=100):
-        index_parallel.upsert(vectors=[(item['id'], item['values']) for item in embeddings_chunk], async_req=True, namespace=book_name_slug.lower())
+        # Prepare upsert data including metadata
+        upsert_data = [(item['id'], item['vector'], {"text": item['text']}) for item in embeddings_chunk]
+        index_parallel.upsert(vectors=upsert_data, async_req=True, namespace=book_name_slug.lower())
 
-    # Optionally, handle results if needed (shown in the example for async handling)
-    # results = [result.get() for result in async_results] # Uncomment if you need to process results
-    print("Book embeddings uploaded to Pinecone index.")  # Confirm completion
+    print("Book embeddings with metadata uploaded to Pinecone index.")
+
+def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embedding-3-large"):
+    """
+    Query Pinecone index with either a text string or a vector, returning text metadata and scores.
+    :param query: Text to embed or a vector.
+    :param embed: Boolean indicating whether the query is a text that needs embedding.
+    :param top_k: Number of top results to return.
+    :param return_top: If True, return only the top result with the highest score; otherwise, return all top_k results.
+    :param model: The model to use for text embedding.
+    """
+    if embed:
+        # Generate an embedding if the input is text
+        query_vector = generate_embedding(query, model=model)
+    else:
+        # Assume the input is already a vector
+        query_vector = query
+
+    # Query Pinecone with metadata inclusion
+    results = pc_index.query(queries=[query_vector], top_k=top_k, include_metadata=True)
+
+    # Extract the IDs, scores, and text from the top results
+    matches = results['matches']
+    formatted_results = [{"text": match["metadata"]["text"], "score": float(match["score"])} for match in matches]
+
+    # Sort results by score in descending order
+    sorted_results = sorted(formatted_results, key=lambda x: x['score'], reverse=True)
+
+    if return_top:
+        # Return only the top result with the highest score
+        top_result = sorted_results[0] if sorted_results else None
+        return top_result
+    else:
+        # Return all top_k results
+        return sorted_results
+
 
 
 ## Pinecone integration
