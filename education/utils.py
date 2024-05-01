@@ -461,7 +461,7 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
     :param top_k: Number of top results to return.
     :param return_top: If True, return only the top result with the highest score; otherwise, return all top_k results.
     :param model: The model to use for text embedding.
-    :param namespace: The namespace within the Pinecone index to query.
+    :param namespace: The namespace within the Pinecone index to query. This is where we provide the Book slug as namespace to search by book.
     """
     if embed:
         # Generate an embedding if the input is text
