@@ -171,6 +171,13 @@ class Lesson(models.Model):
         lecture_transcript = self.transcripts.filter(source='Lecture').first()
         student_transcript = self.transcripts.filter(source='Student').first()
 
+        if not self.analyzed and lecture_transcript and student_transcript:
+            print("Summarizing transcripts...")
+            if not lecture_transcript.summarized:
+                lecture_transcript.summarize()
+            if not student_transcript.summarized:
+                student_transcript.summarize()
+
         if lecture_transcript and student_transcript and lecture_transcript.summarized and student_transcript.summarized:
             prompts = {
                 "interdisciplinary_connections": ("Examine the following transcript for connections to other disciplines or fields of study:\nTranscript: {lecture}", ['lecture']),
