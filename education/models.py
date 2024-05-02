@@ -8,6 +8,7 @@ from PyPDF2 import PdfReader
 import pdfplumber
 from tqdm import tqdm
 from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index,generate_chat_completion
+from django.contrib.auth.models import User
 
 # Enum choices for later use
 PROBLEM_TYPE_CHOICES = [
@@ -359,24 +360,18 @@ class GPTInstance(models.Model):
         # Placeholder for tool execution method
         pass
 
-class Conversation(models.Model):
-    gpt_instance = models.ForeignKey(GPTInstance, on_delete=models.SET_NULL, null=True, blank=True, related_name='conversations')
-    title = models.CharField(max_length=120, blank=True, null=True)
+class ChatSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title or f"Conversation {self.id}"
-
-    def set_title(self):
-        # Placeholder method to set conversation title based on messages
-        pass
+        return f"Chat Session {self.id} - User {self.user.username}"
 
 class Message(models.Model):
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
     text = models.TextField()
-    is_user_message = models.BooleanField(default=True)  # True if from user, False if from AI
-    created_at = models.DateTimeField(auto_now_add=True)
+    role = models.CharField(max_length=10, choices=[('user', 'User'), ('assistant', 'Assistant')])
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Message {self.id} - {('User' if self.is_user_message else 'assistant')} - {self.text[:50]}"
+        return f"Message from {self.role} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}: {self.text[:50]}..."
