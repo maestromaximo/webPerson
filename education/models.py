@@ -6,6 +6,7 @@ from django.db import models
 from django.utils.text import slugify
 from PyPDF2 import PdfReader
 import pdfplumber
+from tqdm import tqdm
 from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index,generate_chat_completion
 
 # Enum choices for later use
@@ -183,7 +184,7 @@ class Lesson(models.Model):
                 "comparison_of_key_concepts": ("Identify and compare key concepts mentioned in both the lecture transcript and the student's summary.\nStudent's Transcript: {student}\nLecture's Transcript: {lecture}", ['student', 'lecture']),
             }
 
-            for field, (prompt_template, required_transcripts) in prompts.items():
+            for field, (prompt_template, required_transcripts) in tqdm(prompts.items(), desc="Generating Analysis for Lesson"):
                 prompt = prompt_template.format(
                     lecture=lecture_transcript.summarized if 'lecture' in required_transcripts else "",
                     student=student_transcript.summarized if 'student' in required_transcripts else ""
@@ -200,6 +201,8 @@ class Lesson(models.Model):
     
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
+        if not self.analyzed:
+            self.generate_analysis()
         super().save(*args, **kwargs)
 
 class Problem(models.Model):
