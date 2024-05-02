@@ -330,47 +330,48 @@ class Prompt(models.Model):
         """
         return cls.objects.filter(category=category, active=True)
     
-class GPTInstance(models.Model):
-    model_name = models.CharField(max_length=70)
-    slug = models.SlugField(max_length=70, unique=True)
-    tools = models.ManyToManyField(Tool, blank=True)
-    use_embeddings = models.BooleanField(default=False)
-    web_access = models.BooleanField(default=False)
-    pre_feed_context = models.JSONField(blank=True, null=True)
-    default_path = models.CharField(max_length=255, blank=True, null=True)
-    model = models.CharField(max_length=50, default='gpt-3.5-turbo-0613')
+# class GPTInstance(models.Model):
+#     model_name = models.CharField(max_length=70)
+#     slug = models.SlugField(max_length=70, unique=True)
+#     tools = models.ManyToManyField(Tool, blank=True)
+#     use_embeddings = models.BooleanField(default=False)
+#     web_access = models.BooleanField(default=False)
+#     pre_feed_context = models.JSONField(blank=True, null=True)
+#     default_path = models.CharField(max_length=255, blank=True, null=True)
+#     model = models.CharField(max_length=50, default='gpt-3.5-turbo-0613')
 
-    def __str__(self):
-        return self.model_name
+#     def __str__(self):
+#         return self.model_name
     
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.model_name)
-        super().save(*args, **kwargs)
+#     def save(self, *args, **kwargs):
+#         if not self.slug:
+#             self.slug = slugify(self.model_name)
+#         super().save(*args, **kwargs)
 
-    def no_context_chat(self, prompt):
-        # Placeholder for no context chat method
-        pass
+#     def no_context_chat(self, prompt):
+#         # Placeholder for no context chat method
+#         pass
 
-    def chat(self, prompt, conversation=None):
-        # Placeholder for chat method with optional conversation context
-        pass
+#     def chat(self, prompt, conversation=None):
+#         # Placeholder for chat method with optional conversation context
+#         pass
 
-    def execute_tool(self, prompt, tool):
-        # Placeholder for tool execution method
-        pass
+#     def execute_tool(self, prompt, tool):
+#         # Placeholder for tool execution method
+#         pass
 
 class ChatSession(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='education_chat_sessions', help_text="The user associated with this education chat session.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Chat Session {self.id} - User {self.user.username}"
 
+
 class Message(models.Model):
-    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
     text = models.TextField()
-    role = models.CharField(max_length=10, choices=[('user', 'User'), ('assistant', 'Assistant')])
+    role = models.CharField(max_length=10, choices=[('user', 'User'), ('assistant', 'Assistant')], default='user')
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

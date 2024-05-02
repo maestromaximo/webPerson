@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import Class, Prompt, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, GPTInstance, Message, Conversation
-
+from .models import Class, Prompt, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession
+# GPTInstance
 class ScheduleInline(admin.TabularInline):
     model = Schedule
     extra = 1  # Number of extra forms to display
@@ -36,6 +36,14 @@ class ProblemSetInline(admin.TabularInline):
 class TestInline(admin.TabularInline):
     model = Test
     extra = 1
+
+class MessageInline(admin.TabularInline):
+    model = Message
+    extra = 1  # Allows adding at least one new message when creating a session
+    fields = ['text', 'role', 'timestamp']
+    readonly_fields = ['timestamp']
+    can_delete = True
+    show_change_link = True
 
 @admin.register(Class)
 class ClassAdmin(admin.ModelAdmin):
@@ -112,34 +120,29 @@ class PromptAdmin(admin.ModelAdmin):
     def make_inactive(self, request, queryset):
         queryset.update(active=False)
 
-@admin.register(GPTInstance)
-class GPTInstanceAdmin(admin.ModelAdmin):
-    list_display = ('model_name', 'use_embeddings', 'web_access', 'default_path')
-    prepopulated_fields = {"slug": ("model_name",)}
-    list_filter = ('model_name', 'use_embeddings', 'web_access')
-    search_fields = ('model_name',)
-    filter_horizontal = ('tools',)
+# @admin.register(GPTInstance)
+# class GPTInstanceAdmin(admin.ModelAdmin):
+#     list_display = ('model_name', 'use_embeddings', 'web_access', 'default_path')
+#     prepopulated_fields = {"slug": ("model_name",)}
+#     list_filter = ('model_name', 'use_embeddings', 'web_access')
+#     search_fields = ('model_name',)
+#     filter_horizontal = ('tools',)
 
-@admin.register(Conversation)
-class ConversationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'gpt_instance', 'created_at', 'updated_at')
-    list_filter = ('created_at', 'gpt_instance')
-    search_fields = ('title',)
-    date_hierarchy = 'created_at'
-    ordering = ('-created_at',)
+@admin.register(ChatSession)
+class ChatSessionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user__username',)
+    inlines = [MessageInline]
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('gpt_instance')
+    def get_ordering(self, request):
+        return ['created_at']  # Order by creation time by default
+
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'short_text', 'is_user_message', 'conversation', 'created_at')
-    list_filter = ('is_user_message', 'created_at', 'conversation')
-    search_fields = ('text',)
-    date_hierarchy = 'created_at'
-    ordering = ('-created_at',)
+    list_display = ('id', 'session', 'text', 'role', 'timestamp')
+    list_filter = ('timestamp', 'role')
+    search_fields = ('text', 'session__id')
+    readonly_fields = ['timestamp']
 
-    def short_text(self, obj):
-        return obj.text[:50] + '...' if len(obj.text) > 50 else obj.text
-    short_text.short_description = 'Text'
