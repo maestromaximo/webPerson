@@ -155,16 +155,45 @@ class Lesson(models.Model):
     slug = models.SlugField(null=True, blank=True)
     analyzed = models.BooleanField(default=False)  # New field to track analysis status
 
+    interdisciplinary_connections = models.TextField(null=True, blank=True)
+    real_world_applications = models.TextField(null=True, blank=True)
+    creative_synthesis_of_ideas = models.TextField(null=True, blank=True)
+    detail_level_comparison = models.TextField(null=True, blank=True)
+    accuracy_of_information = models.TextField(null=True, blank=True)
+    direct_concept_comparison = models.TextField(null=True, blank=True)
+    strengths_in_students_understanding = models.TextField(null=True, blank=True)
+    understanding_gaps = models.TextField(null=True, blank=True)
+    comparison_of_key_concepts = models.TextField(null=True, blank=True)
+
     def generate_analysis(self):
-        """Generate analysis for the lesson if it has both student and lecture transcripts."""
-        transcripts: List[Transcript] = self.transcripts.all()
-        if transcripts.filter(source='Student').exists() and transcripts.filter(source='Lecture').exists():
-            # Check if both transcripts are summarized
-            for transcript in transcripts:
-                if not transcript.summarized:
-                    transcript.summarize()
+        """Generates an analysis for the lesson if both student and lecture transcripts exist and are summarized."""
+        lecture_transcript = self.transcripts.filter(source='Lecture').first()
+        student_transcript = self.transcripts.filter(source='Student').first()
+
+        if lecture_transcript and student_transcript and lecture_transcript.summarized and student_transcript.summarized:
+            prompts = {
+                "interdisciplinary_connections": ("Examine the following transcript for connections to other disciplines or fields of study:\nTranscript: {lecture}", ['lecture']),
+                "real_world_applications": ("Identify and describe real-world applications or examples of concepts discussed in the following transcript summary:\nTranscript: {lecture}", ['lecture']),
+                "creative_synthesis_of_ideas": ("Encourage a creative synthesis of the ideas discussed in the following transcript:\nTranscript: {lecture}", ['lecture']),
+                "detail_level_comparison": ("Compare the level of detail between the lecture's content and the student's summary. Please be logical and thorough in your comparison.\nStudent's Transcript: {student}\nLecture's Transcript: {lecture}", ['student', 'lecture']),
+                "accuracy_of_information": ("Evaluate the accuracy of the information in the student's summary compared to the lecture's transcript.\nStudent's Transcript: {student}\nLecture's Transcript: {lecture}", ['student', 'lecture']),
+                "direct_concept_comparison": ("Directly compare the concepts and topics covered in the lecture transcript with those mentioned in the student's summary.\nStudent's Transcript: {student}\nLecture's Transcript: {lecture}", ['student', 'lecture']),
+                "strengths_in_students_understanding": ("Analyze the student's summary to identify strengths in their understanding given the lecture.\nStudent's Summary: {student}", ['student']),
+                "understanding_gaps": ("Based on the lecture transcript and the student's summary, identify any themes the student may have misunderstood or is not applying correctly or missing completely.\nStudent's Transcript: {student}\nLecture's Transcript: {lecture}", ['student', 'lecture']),
+                "comparison_of_key_concepts": ("Identify and compare key concepts mentioned in both the lecture transcript and the student's summary.\nStudent's Transcript: {student}\nLecture's Transcript: {lecture}", ['student', 'lecture']),
+            }
+
+            for field, (prompt_template, required_transcripts) in prompts.items():
+                prompt = prompt_template.format(
+                    lecture=lecture_transcript.summarized if 'lecture' in required_transcripts else "",
+                    student=student_transcript.summarized if 'student' in required_transcripts else ""
+                )
+                setattr(self, field, generate_chat_completion(prompt))
+            
             self.analyzed = True
             self.save()
+
+
 
     def __str__(self):
         return f"{self.title or 'Unnamed Lesson'} - {self.related_class.name}"
