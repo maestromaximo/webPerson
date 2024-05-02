@@ -501,3 +501,26 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
 
 
 ## Pinecone integration
+
+
+
+def generate_chat_completion(user_question, use_gpt4=False):
+    """
+    Generates a chat completion using OpenAI's GPT-3.5-turbo or GPT-4 model.
+
+    Args:
+    user_question (str): The user's question.
+    use_gpt4 (bool): Whether to use GPT-4 model or not (defaults to False).
+
+    Returns:
+    str: The generated completion message.
+    """
+    model = "gpt-4" if use_gpt4 else "gpt-3.5-turbo"
+    completion = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": user_question}
+        ]
+    )
+    return completion.choices[0].message.content
