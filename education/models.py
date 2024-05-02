@@ -1,11 +1,12 @@
 import os
 import re
+from typing import List
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 from PyPDF2 import PdfReader
 import pdfplumber
-from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index
+from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index,generate_chat_completion
 
 # Enum choices for later use
 PROBLEM_TYPE_CHOICES = [
@@ -152,6 +153,18 @@ class Lesson(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
     related_class = models.ForeignKey(Class, related_name='lessons', on_delete=models.CASCADE)
     slug = models.SlugField(null=True, blank=True)
+    analyzed = models.BooleanField(default=False)  # New field to track analysis status
+
+    def generate_analysis(self):
+        """Generate analysis for the lesson if it has both student and lecture transcripts."""
+        transcripts: List[Transcript] = self.transcripts.all()
+        if transcripts.filter(source='Student').exists() and transcripts.filter(source='Lecture').exists():
+            # Check if both transcripts are summarized
+            for transcript in transcripts:
+                if not transcript.summarized:
+                    transcript.summarize()
+            self.analyzed = True
+            self.save()
 
     def __str__(self):
         return f"{self.title or 'Unnamed Lesson'} - {self.related_class.name}"
@@ -207,6 +220,14 @@ class Transcript(models.Model):
     source = models.CharField(max_length=50, choices=SOURCE_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
     related_lesson = models.ForeignKey(Lesson, related_name='transcripts', on_delete=models.CASCADE)
+    summarized = models.TextField(null=True, blank=True)  # New field for storing summaries
+
+    def summarize(self):
+        """Generate a summary for this transcript using an AI model."""
+        if not self.summarized:  # Check if the summary is already generated
+            prompt = f"Provide only a well thought summary of the following transcript of a university lesson, you must capture the essence of the lesson and its most important points, equations, and ideas, write as much as you want.\nTranscript:\"{self.content}\""
+            self.summarized = generate_chat_completion(prompt, use_gpt4=True)
+            self.save()
 
 class Notes(models.Model):
     file = models.FileField(upload_to='notes/')
