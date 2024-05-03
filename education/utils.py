@@ -10,6 +10,7 @@ from pinecone import Pinecone
 from tqdm import tqdm
 import itertools
 
+
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
     'gpt-4-vision': 'gpt-4-vision-preview',
@@ -524,3 +525,44 @@ def generate_chat_completion(user_question, use_gpt4=False):
         ]
     )
     return completion.choices[0].message.content
+
+def get_gpt_response_with_context(session, user_question:str, use_gpt4=False):
+    """
+    Generates a chat completion using OpenAI's GPT model, including context from previous messages.
+
+    Args:
+        session (ChatSession): The chat session object containing messages.
+        user_question (str): The user's current question.
+        use_gpt4 (bool): Whether to use GPT-4 model (defaults to False, using GPT-3.5-turbo instead).
+
+    Returns:
+        str: The generated completion message.
+    """
+    # Select the appropriate model based on the function argument
+    from .models import Message
+    model_version = "gpt-4" if use_gpt4 else "gpt-3.5-turbo"
+
+    # Build the conversation history for context
+    messages = session.messages.all()
+    conversation_history = [{"role": "system", "content": "You are a helpful assistant."}]
+    for message in messages:
+        role = "user" if message.role == 'user' else "assistant"
+        conversation_history.append({"role": role, "content": message.text})
+
+    # Add the current user question to the conversation history
+    conversation_history.append({"role": "user", "content": user_question})
+    
+    # print(f'conversation_history: {conversation_history}')
+    # Generate the completion with OpenAI API
+    response = client.chat.completions.create(
+        model=model_version,
+        messages=conversation_history
+    )
+
+    ##create and append the messages to session
+    # new_message = Message(session=session, role='user', text=user_question)
+    # new_message.save()
+    # assistant_response = Message(session=session, role='assistant', text=response.choices[0].message.content)
+    # assistant_response.save()
+    
+    return response.choices[0].message.content

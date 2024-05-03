@@ -21,6 +21,8 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/lessons/transcribe/', views.upload_and_transcribe, name='transcribe-lesson'),
     # path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('chat/', views.chat, name='chat_view'),
+    path('chat/fetch-messages/<int:session_id>/', views.fetch_messages, name='fetch_messages_education'),
 
     path('class/<slug:class_slug>/', views.class_dashboard, name='class_dashboard'),
     path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chat Interface{% endblock %}
+
+{% block content %}
+<div class="flex h-[calc(100vh-4rem)] flex-col overflow-hidden bg-[#171717] text-white md:flex-row">
+  <!-- Chat History Sidebar -->
+  <aside class="w-full overflow-y-auto bg-[#2c2c2c] p-4 md:w-64 lg:w-1/5 xl:w-1/6">
+    <ul id="chatSessionsList">
+      {% for session in chat_sessions %}
+      <li class="cursor-pointer border-b border-gray-700 py-2" data-session-id="{{ session.id }}" onclick="loadSession('{{ session.id }}')">
+        Session {{ session.id }} ({{ session.messages.count }} Messages)
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <!-- Chat Main Area -->
+  <main class="flex flex-1 flex-col">
+    <div class="flex flex-1 flex-col overflow-hidden p-6">
+      <div id="chat" class="mb-4 flex-1 overflow-y-auto rounded-lg bg-[#202020] p-4">
+        <!-- Chat messages will be dynamically added here -->
+      </div>
+      <!-- Message Input Area -->
+      <div class="flex">
+        <input type="text" id="messageInput" class="flex-1 rounded-l-lg border-gray-300 bg-[#292929] p-2 text-white focus:outline-none focus:ring" placeholder="Type your message..." />
+        <button id="sendMessage" class="rounded-r-lg bg-blue-500 px-4 text-white hover:bg-blue-600">Send</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+    var currentSessionId = null; // Start with no active session
+
+function loadSession(sessionId) {
+    currentSessionId = sessionId;
+    console.log('Loading session:', sessionId);
+    fetch(`/education/chat/fetch-messages/${sessionId}/`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        const chatWindow = document.getElementById('chat');
+        chatWindow.innerHTML = '';  // Clear current chat messages
+        data.messages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = msg.is_user_message ? 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto' : 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
+            messageDiv.textContent = msg.text;
+            chatWindow.appendChild(messageDiv);
+        });
+        chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to the bottom of the chat window
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+document.getElementById('sendMessage').addEventListener('click', function() {
+    var messageInput = document.getElementById('messageInput');
+    var message = messageInput.value.trim();
+
+    if (message === "") {
+        alert("Please enter a message.");
+        return;
+    }
+
+    fetch("{% url 'chat_view' %}", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'message': message,
+            'session_id': currentSessionId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const chatWindow = document.getElementById('chat');
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto';
+        userMessageDiv.textContent = message;
+        chatWindow.appendChild(userMessageDiv);
+
+        if (data.response) {
+            const responseElement = document.createElement('div');
+            responseElement.className = 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
+            responseElement.textContent = data.response;
+            chatWindow.appendChild(responseElement);
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        messageInput.value = '';
+    })
+    .catch(error => console.error('Error:', error));
+});
+  
+    document.getElementById('messageInput').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        document.getElementById('sendMessage').click();
+      }
+    });
+  </script>
+  
+{% endblock %}

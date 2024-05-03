@@ -1,23 +1,30 @@
 import datetime
+import json
 from django.shortcuts import get_object_or_404, render
 import requests
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
+
+from education.utils import generate_chat_completion, get_gpt_response_with_context
 # import openai
-from .models import Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test
+from .models import ChatSession, Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
 from rest_framework.decorators import api_view
 from django.db.models import Count
 from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer, 
                           LessonSerializer, ProblemSerializer, ToolSerializer, 
                           TranscriptSerializer, NotesSerializer, AssignmentSerializer, 
                           ProblemSetSerializer, TestSerializer)
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
 
 
-
+@login_required
 def education_home(request):
     # Get all classes
     active_classes = Class.objects.all()
@@ -45,6 +52,7 @@ def education_home(request):
 
     return render(request, 'education/education_home_dark.html', context)
 
+@login_required
 def class_dashboard(request, class_slug):
     # Retrieve the class by slug. If not found, a 404 error will be raised.
     selected_class = get_object_or_404(Class, slug=class_slug)
@@ -68,6 +76,7 @@ def class_dashboard(request, class_slug):
 
     return render(request, 'education/class_home.html', context)
 
+@login_required
 def lesson_dashboard(request, lesson_slug):
     # Retrieve the lesson by slug. If not found, a 404 error will be raised.
     selected_lesson = get_object_or_404(Lesson, slug=lesson_slug)
@@ -155,6 +164,66 @@ def upload_and_transcribe(request):
         return Response({'error': 'Authentication error.'}, status=401)
     except Exception as e:
         return Response({'error': 'Failed to transcribe audio.'}, status=500)
+    
+
+@login_required
+def chat(request):
+    if request.method == 'GET':
+        # Load the chat interface without any active session
+        chat_sessions = ChatSession.objects.filter(user=request.user).order_by('-created_at')
+        return render(request, 'education/chat.html', {
+            'chat_sessions': chat_sessions,
+            'current_session_id': None
+        })
+
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        message_text = data.get('message')
+        session_id = data.get('session_id', None)
+        # print(f'Debug: {session_id}')
+        if session_id == 'None':
+            print('Creating new session')
+            session_id = None
+
+        if not message_text:
+            return HttpResponseBadRequest("Message text is required.")
+
+        # Check if a session ID was provided and is not None
+        if session_id is not None:
+            session = ChatSession.objects.filter(id=session_id, user=request.user).first()
+        else:
+            # Create a new session if no session_id is provided
+            session = ChatSession.objects.create(user=request.user)
+
+        if not session:
+            return HttpResponseBadRequest("Invalid session.")
+
+        # Create a user message
+        Message.objects.create(session=session, text=message_text, role='user')
+
+        # Generate AI response using the session's messages as context
+        response_text = get_gpt_response_with_context(session, message_text)
+
+        # Create an assistant message
+        Message.objects.create(session=session, text=response_text, role='assistant')
+
+        return JsonResponse({'response': response_text})
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def fetch_messages(request, session_id):
+    # Ensure user is authenticated and correct session is accessed
+    print(f'Debug: {session_id}, in fetch_messages')
+    if not request.user.is_authenticated:
+        return HttpResponseBadRequest("User not authenticated.")
+
+    session = ChatSession.objects.filter(id=session_id, user=request.user).first()
+    if not session:
+        return HttpResponseBadRequest("Invalid session.")
+
+    messages = [{'text': msg.text, 'is_user_message': (msg.role == 'user')} for msg in session.messages.all().order_by('timestamp')]
+    return JsonResponse({'messages': messages})
+
     
     
 class ClassViewSet(viewsets.ModelViewSet):
