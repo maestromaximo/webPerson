@@ -214,13 +214,43 @@ def chat(request, class_slug=None, lesson_slug=None):
 
         # Generate a response with context if any
         if lesson_slug:
-            # print(f'lesson_slug: {lesson_slug}')
-            lesson_instance = get_object_or_404(Lesson, slug=lesson_slug)
+            lesson = get_object_or_404(Lesson, slug=lesson_slug)
+            related_class = lesson.related_class
+            
             if new_session_created:
-                enhanced_query = f"The user is messaging you with regards to a university lesson, this is the name of the lesson {lesson.title} and it comes from this class {lesson.related_class.name}. For context, here is a summary of the lesson:\n {lesson.interdisciplinary_connections}\n Strengths in student's understanding: {lesson.strengths_in_students_understanding}\n Understanding gaps: {lesson.understanding_gaps}\n Please answer this user question given that:\n\"{message_text}\""
-                response_text = generate_chat_completion(lesson_instance, message_text)
+                enhanced_query = f"This chat is about the lesson '{lesson.title}' from the class '{related_class.name}', here is information related to this lesson and the student:\nSummary: {lesson.get_lecture_summary()}\n Gaps: {lesson.understanding_gaps}\n Strengths: {lesson.strengths_in_students_understanding}, Accuracy: {lesson.accuracy_of_information}\n Concepts: {lesson.comparison_of_key_concepts}.\nGiven this information, please answer the following question from the student:\n\"{message_text}\"\n"
+                if super_search:
+                    try:
+                        book_slug = related_class.book.slug if related_class.book else None
+                        pinecone_result = query_pinecone(message_text, namespace=book_slug) if book_slug else query_pinecone(message_text)
+                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title+",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
+                        b_lesson_2 = related_class.find_most_similar_lesson(message_text)
+                        if b_lesson_2:
+                            best_lessons_final.append(b_lesson_2)
+                        enhanced_query += f"Most relevant lesson from this class that could answer the question: {b_lesson_2.title}:\n{b_lesson_2.get_lecture_summary()}\n"
+                    except Exception as e:
+                        print("Error querying Pinecone", e)
+                 
+                enhanced_query += f"Given all of the contextual information above, please answer the following question from the student:\n\"{message_text}\""
+                response_text = get_gpt_response_with_context(session, enhanced_query)
             else:
-                response_text = get_gpt_response_with_context(session, message_text, lesson_slug=lesson_slug)
+                enhanced_query = ""
+                if super_search:
+                    try:
+                        book_slug = related_class.book.slug if related_class.book else None
+                        pinecone_result = query_pinecone(message_text, namespace=book_slug) if book_slug else query_pinecone(message_text)
+                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title+",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
+                        b_lesson_2 = related_class.find_most_similar_lesson(message_text)
+                        if b_lesson_2:
+                            best_lessons_final.append(b_lesson_2)
+                        enhanced_query += f"Most relevant lesson from this class that could answer the last question: {b_lesson_2.title}:\n{b_lesson_2.get_lecture_summary()}\n"
+                    except Exception as e:
+                        print("Error querying Pinecone", e)
+                    enhanced_query += f"Given all of the contextual information above, please answer the following question from the student:\n\"{message_text}\""
+                    response_text = get_gpt_response_with_context(session, enhanced_query, lesson_slug=lesson_slug)
+                else:
+                    response_text = get_gpt_response_with_context(session, message_text, lesson_slug=lesson_slug)
+
         elif class_slug:
             # print(f'class_slug: {class_slug}')
             class_instance = get_object_or_404(Class, slug=class_slug)
