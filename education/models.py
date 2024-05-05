@@ -66,7 +66,7 @@ class Class(models.Model):
         self.slug = slugify(self.name)  # Slugify the name
         super().save(*args, **kwargs)
     
-    def find_most_similar_lesson(self, query_text):
+    def find_most_similar_lesson(self, query_text:str):
         """Returns the most similar lesson within this class based on embeddings."""
         query_vector = generate_embedding(query_text)
         highest_similarity = -1
@@ -200,6 +200,14 @@ class Lesson(models.Model):
     understanding_gaps = models.TextField(null=True, blank=True)
     comparison_of_key_concepts = models.TextField(null=True, blank=True)
 
+    def get_lecture_summary(self):
+        """Returns the summarized lecture transcript for this lesson."""
+        lecture_transcript = self.transcripts.filter(source='Lecture').first()
+        if lecture_transcript:
+            if not lecture_transcript.summarized:
+                lecture_transcript.summarize()
+            return lecture_transcript.summarized
+        return "no summary available"
     def generate_analysis(self):
         """Generates an analysis for the lesson if both student and lecture transcripts exist and are summarized."""
         lecture_transcript = self.transcripts.filter(source='Lecture').first()
