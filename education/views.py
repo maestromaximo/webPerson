@@ -5,7 +5,7 @@ import requests
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 
-from education.utils import generate_chat_completion, get_gpt_response_with_context
+from education.utils import generate_chat_completion, get_gpt_response_with_context, query_pinecone
 # import openai
 from .models import ChatSession, Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
 from rest_framework.decorators import api_view
@@ -197,6 +197,7 @@ def chat(request, class_slug=None, lesson_slug=None):
         super_search = data.get('super_search', False)
         class_slug = data.get('class_slug', None)
         lesson_slug = data.get('lesson_slug', None)
+        new_session_created = False
         
         if not message_text:
             return HttpResponseBadRequest("Message text is required.")
@@ -205,6 +206,7 @@ def chat(request, class_slug=None, lesson_slug=None):
         session = ChatSession.objects.filter(id=session_id, user=request.user).first()
         if not session:
             session = ChatSession.objects.create(user=request.user)
+            new_session_created = True
 
         # Create a user message
         Message.objects.create(session=session, text=message_text, role='user')
@@ -212,13 +214,32 @@ def chat(request, class_slug=None, lesson_slug=None):
         # Generate a response with context if any
         if lesson_slug:
             # print(f'lesson_slug: {lesson_slug}')
-            response_text = get_gpt_response_with_context(session, message_text, lesson_slug=lesson_slug)
+            lesson_instance = get_object_or_404(Lesson, slug=lesson_slug)
+            if new_session_created:
+                enhanced_query = f"The user is messaging you with regards to a university lesson, this is the name of the lesson {lesson.title} and it comes from this class {lesson.related_class.name}. For context, here is a summary of the lesson:\n {lesson.interdisciplinary_connections}\n Strengths in student's understanding: {lesson.strengths_in_students_understanding}\n Understanding gaps: {lesson.understanding_gaps}\n Please answer this user question given that:\n\"{message_text}\""
+                response_text = generate_chat_completion(lesson_instance, message_text)
+            else:
+                response_text = get_gpt_response_with_context(session, message_text, lesson_slug=lesson_slug)
         elif class_slug:
             # print(f'class_slug: {class_slug}')
-            response_text = get_gpt_response_with_context(session, message_text, class_slug=class_slug)
+            class_instance = get_object_or_404(Class, slug=class_slug)
+            if new_session_created:
+                enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name}.\nPlease answer this user question given that:\n\"{message_text}\""
+                response_text = generate_chat_completion(class_instance, message_text)
+            else:
+                response_text = get_gpt_response_with_context(session, message_text, class_slug=class_slug)
         else:
             # print(f'No context')
-            response_text = get_gpt_response_with_context(session, message_text)
+            if super_search:
+                try:
+                    pinecone_result = query_pinecone(message_text)
+                    enhanced_query = f"This is a system message from a RAG system, attached is the most relevant 500 word long paragraph from an academic book likely related to the question, use it as a base to answer the question or support it if relevant.\nContext:\"{pinecone_result}\"\nNow this is the original question from the user, please answer it accordingly now:\n\"{message_text}\""
+                    response_text = get_gpt_response_with_context(session, enhanced_query)
+                except Exception as e:
+                    print("Error enhancing query",e)
+                    response_text = get_gpt_response_with_context(session, message_text)
+            else:    
+                response_text = get_gpt_response_with_context(session, message_text)
 
         # Create an assistant message
         Message.objects.create(session=session, text=response_text, role='assistant')
