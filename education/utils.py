@@ -9,7 +9,7 @@ import re
 from pinecone import Pinecone
 from tqdm import tqdm
 import itertools
-
+import numpy as np
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -500,7 +500,17 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
 
 
 
-
+def cosine_similarity(vec1, vec2):
+    """Calculate the cosine similarity between two vectors."""
+    vec1 = np.array(vec1)
+    vec2 = np.array(vec2)
+    dot_product = np.dot(vec1, vec2)
+    norm_vec1 = np.linalg.norm(vec1)
+    norm_vec2 = np.linalg.norm(vec2)
+    if norm_vec1 == 0 or norm_vec2 == 0:
+        return 0  # Avoid division by zero
+    similarity = dot_product / (norm_vec1 * norm_vec2)
+    return similarity
 ## Pinecone integration
 
 
@@ -526,7 +536,7 @@ def generate_chat_completion(user_question, use_gpt4=False):
     )
     return completion.choices[0].message.content
 
-def get_gpt_response_with_context(session, user_question:str, use_gpt4=False):
+def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, lesson_slug=None, class_slug=None):
     """
     Generates a chat completion using OpenAI's GPT model, including context from previous messages.
 

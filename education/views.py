@@ -167,47 +167,63 @@ def upload_and_transcribe(request):
     
 
 @login_required
-def chat(request):
+def chat(request, class_slug=None, lesson_slug=None):
+    # Initialize context with chat sessions
+    context = {
+        'chat_sessions': ChatSession.objects.filter(user=request.user).order_by('-created_at'),
+        'current_session_id': None
+    }
+    
+    # Use slugs from the URL or fall back to the POST data
+    # class_slug = class_slug
+    # lesson_slug = lesson_slug 
+
+    # If accessed via a class or lesson page
+    if class_slug:
+        context['current_class'] = get_object_or_404(Class, slug=class_slug)
+    if lesson_slug:
+        lesson = get_object_or_404(Lesson, slug=lesson_slug)
+        context['current_lesson'] = lesson
+        context['current_class'] = lesson.related_class  # This assumes that each lesson has a related class
+
     if request.method == 'GET':
-        # Load the chat interface without any active session
-        chat_sessions = ChatSession.objects.filter(user=request.user).order_by('-created_at')
-        return render(request, 'education/chat.html', {
-            'chat_sessions': chat_sessions,
-            'current_session_id': None
-        })
+        # Render the chat template with the additional context
+        return render(request, 'education/chat.html', context)
 
     elif request.method == 'POST':
         data = json.loads(request.body)
         message_text = data.get('message')
         session_id = data.get('session_id', None)
-        # print(f'Debug: {session_id}')
-        if session_id == 'None':
-            print('Creating new session')
-            session_id = None
-
+        super_search = data.get('super_search', False)
+        class_slug = data.get('class_slug', None)
+        lesson_slug = data.get('lesson_slug', None)
+        
         if not message_text:
             return HttpResponseBadRequest("Message text is required.")
 
-        # Check if a session ID was provided and is not None
-        if session_id is not None:
-            session = ChatSession.objects.filter(id=session_id, user=request.user).first()
-        else:
-            # Create a new session if no session_id is provided
-            session = ChatSession.objects.create(user=request.user)
-
+        # Find or create a chat session
+        session = ChatSession.objects.filter(id=session_id, user=request.user).first()
         if not session:
-            return HttpResponseBadRequest("Invalid session.")
+            session = ChatSession.objects.create(user=request.user)
 
         # Create a user message
         Message.objects.create(session=session, text=message_text, role='user')
 
-        # Generate AI response using the session's messages as context
-        response_text = get_gpt_response_with_context(session, message_text)
+        # Generate a response with context if any
+        if lesson_slug:
+            # print(f'lesson_slug: {lesson_slug}')
+            response_text = get_gpt_response_with_context(session, message_text, lesson_slug=lesson_slug)
+        elif class_slug:
+            # print(f'class_slug: {class_slug}')
+            response_text = get_gpt_response_with_context(session, message_text, class_slug=class_slug)
+        else:
+            # print(f'No context')
+            response_text = get_gpt_response_with_context(session, message_text)
 
         # Create an assistant message
         Message.objects.create(session=session, text=response_text, role='assistant')
 
-        return JsonResponse({'response': response_text})
+        return JsonResponse({'response': response_text, 'session_id': session.id})
 
 @csrf_exempt
 @require_http_methods(["GET"])

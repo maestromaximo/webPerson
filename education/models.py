@@ -7,8 +7,9 @@ from django.utils.text import slugify
 from PyPDF2 import PdfReader
 import pdfplumber
 from tqdm import tqdm
-from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index,generate_chat_completion
+from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index,generate_chat_completion, generate_embedding, cosine_similarity
 from django.contrib.auth.models import User
+
 
 # Enum choices for later use
 PROBLEM_TYPE_CHOICES = [
@@ -35,6 +36,23 @@ PROMPT_CHOICES = [
     ('Other', 'Other'),
 ]
 
+
+
+class LessonEmbedding(models.Model):
+    lesson = models.OneToOneField('Lesson', on_delete=models.CASCADE, related_name='embedding')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    vector = models.JSONField()
+
+    def update_embedding(self):
+        """Generates or updates the embedding for the lesson's lecture transcript."""
+        lecture_transcript = self.lesson.transcripts.filter(source='Lecture').first()
+        if lecture_transcript:
+            if not lecture_transcript.summarized:
+                lecture_transcript.summarize()
+            self.vector = generate_embedding(lecture_transcript.summarized)
+            self.save()
+    
 class Class(models.Model):
     name = models.CharField(max_length=255)
     subject = models.CharField(max_length=255)
@@ -48,6 +66,21 @@ class Class(models.Model):
         self.slug = slugify(self.name)  # Slugify the name
         super().save(*args, **kwargs)
     
+    def find_most_similar_lesson(self, query_text):
+        """Returns the most similar lesson within this class based on embeddings."""
+        query_vector = generate_embedding(query_text)
+        highest_similarity = -1
+        most_similar_lesson = None
+
+        for lesson in self.lessons.all():
+            if hasattr(lesson, 'embedding'):
+                lesson_vector = lesson.embedding.vector
+                similarity = cosine_similarity(query_vector, lesson_vector)
+                if similarity > highest_similarity:
+                    highest_similarity = similarity
+                    most_similar_lesson = lesson
+
+        return most_similar_lesson
 
 
 class Schedule(models.Model):
@@ -202,7 +235,11 @@ class Lesson(models.Model):
             self.analyzed = True
             self.save()
 
-
+    def embed(self):
+        """Ensures this lesson has an up-to-date embedding."""
+        embedding, created = LessonEmbedding.objects.get_or_create(lesson=self)
+        if not created:
+            embedding.update_embedding()
 
     def __str__(self):
         return f"{self.title or 'Unnamed Lesson'} - {self.related_class.name}"
@@ -211,6 +248,7 @@ class Lesson(models.Model):
         self.slug = slugify(self.title)
         if not self.analyzed:
             self.generate_analysis()
+            self.embed()
         super().save(*args, **kwargs)
 
 class Problem(models.Model):
