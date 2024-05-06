@@ -12,6 +12,8 @@ import itertools
 import numpy as np
 import concurrent.futures
 from functools import partial
+import tempfile
+import shutil
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -639,3 +641,34 @@ def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, le
     # assistant_response.save()
     
     return response.choices[0].message.content
+
+
+
+def transcribe_audio(audio_file, model="whisper-1"):
+    """
+    Transcribe the audio file using the specified model.
+
+    Args:
+    audio_file: The audio file.
+    model (str): The model to use for transcription (defaults to "whisper-1").
+
+    Returns:
+    str: The transcribed text from the audio file.
+    """
+     # OpenAI expects a file path or file-like object; we will use a NamedTemporaryFile to handle this.
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp:
+        # Write the uploaded file's contents to the temporary file
+        for chunk in audio_file.chunks():
+            tmp.write(chunk)
+        tmp.seek(0)  # Rewind the file pointer to the beginning of the file
+        
+        # Use the OpenAI API to transcribe the audio
+        response = client.audio.transcriptions.create(
+            file=tmp.file,  # Pass the temporary file object
+            model=model
+        )
+        
+        # Ensure to close and delete the temporary file
+        tmp.close()
+    # print('response:', response)
+    return response.text

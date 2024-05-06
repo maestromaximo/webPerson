@@ -29,7 +29,10 @@ urlpatterns = [
     path('chat/fetch-messages/<int:session_id>/', views.fetch_messages, name='fetch_messages_education'),
 
     path('class/<slug:class_slug>/', views.class_dashboard, name='class_dashboard'),
+    path('class/<slug:class_slug>/add-lesson/', views.add_lesson_view, name='add_lesson'),
+
     path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),
+    path('lesson/<slug:lesson_slug>/add-transcriptions/', views.add_transcriptions_view, name='add_transcriptions'),
 
     # path('api/classes/', views.ClassListView.as_view(), name='class-list'),
     # path('api/classes/<int:class_id>/', views.ScheduleDetailView.as_view(), name='schedule-detail'),

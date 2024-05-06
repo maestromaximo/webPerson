@@ -256,9 +256,10 @@ class Lesson(models.Model):
     
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
-        if not self.analyzed:
+        if not self.analyzed and self.id:
             self.generate_analysis()
-        self.embed()
+        if self.id:
+            self.embed()
         super().save(*args, **kwargs)
 
 class Problem(models.Model):
@@ -304,7 +305,7 @@ class Tool(models.Model):
             return 'Unnamed Tool'
 
 class Transcript(models.Model):
-    content = models.TextField()
+    content = models.TextField(null=True, blank=True)
     source = models.CharField(max_length=50, choices=SOURCE_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
     related_lesson = models.ForeignKey(Lesson, related_name='transcripts', on_delete=models.CASCADE)

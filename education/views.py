@@ -1,11 +1,12 @@
 import datetime
 import json
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 import requests
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 
-from education.utils import generate_chat_completion, get_gpt_response_with_context, query_pinecone
+from education.forms import LessonForm, TranscriptionUploadForm
+from education.utils import generate_chat_completion, get_gpt_response_with_context, query_pinecone, transcribe_audio
 # import openai
 from .models import ChatSession, Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
 from rest_framework.decorators import api_view
@@ -98,6 +99,44 @@ def lesson_dashboard(request, lesson_slug):
 
     return render(request, 'education/lesson_home.html', context)
 
+@login_required
+def add_lesson_view(request, class_slug):
+    class_obj = Class.objects.get(slug=class_slug)
+    if request.method == 'POST':
+        form = LessonForm(request.POST, request.FILES)
+        if form.is_valid():
+            lesson = form.save(commit=False)
+            lesson.related_class = class_obj
+            lesson.save()
+            return redirect('class_dashboard', class_slug=class_slug)
+    else:
+        form = LessonForm()
+    return render(request, 'education/add_lesson.html', {'form': form, 'class': class_obj})
+
+@login_required
+def add_transcriptions_view(request, lesson_slug):
+    lesson = get_object_or_404(Lesson, slug=lesson_slug)
+    if request.method == 'POST':
+        form = TranscriptionUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            for field in ['lecture_file', 'student_file']:
+                audio_file = form.cleaned_data.get(field)
+                if audio_file:
+                    source = 'Lecture' if 'lecture' in field else 'Student'
+                    transcript_text = transcribe_audio(audio_file)  
+                    tt, c = Transcript.objects.get_or_create(
+                        source=source,
+                        related_lesson=lesson
+                    )
+                    tt.content = transcript_text
+                    tt.save()
+
+                lesson.save() # Save the lesson to update the last updated timestamp and begin the analysis process and embedding
+            return redirect('lesson_dashboard', lesson_slug=lesson.slug)
+    else:
+        form = TranscriptionUploadForm()
+    
+    return render(request, 'education/add_transcriptions.html', {'form': form, 'lesson': lesson})
 
 @api_view(['POST'])
 def upload_and_transcribe(request):
