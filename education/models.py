@@ -148,7 +148,7 @@ class Book(models.Model):
         """Sets the page count from the PDF file."""
         if self.pdf and self.page_count <= 1:
             # Construct the full path to the PDF file
-            pdf_path = os.path.join(settings.MEDIA_ROOT, "books", self.pdf.name)
+            pdf_path = os.path.join(settings.MEDIA_ROOT, self.pdf.name)
             try:
                 reader = PdfReader(pdf_path)
                 self.page_count = len(reader.pages)
@@ -172,6 +172,7 @@ class Book(models.Model):
         # Automatically generate slug from title
         if not self.slug and self.title:
             self.slug = slugify(self.title)
+        super().save(*args, **kwargs) # Call the original so we can store and work with the file.
         if not self.page_count:
             self.set_page_count()
         if self.page_offset == 0:
