@@ -226,7 +226,7 @@ def chat(request, class_slug=None, lesson_slug=None):
                         pinecone_result = query_pinecone(message_text, namespace=book_slug) if book_slug else query_pinecone(message_text)
                         
                         # print(f"DEBUG, related_class.book: {related_class.book}")
-                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title+",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
+                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title+',the lessons book to the question' if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
                         
                         b_lesson_2 = related_class.find_most_similar_lesson(message_text)
                         if b_lesson_2:
@@ -245,7 +245,7 @@ def chat(request, class_slug=None, lesson_slug=None):
                         book_slug = related_class.book.slug if related_class.book else None
                         pinecone_result = query_pinecone(message_text, namespace=book_slug) if book_slug else query_pinecone(message_text)
                         # print(f"DEBUG, related_class.book: {related_class.book.title}")
-                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title +",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
+                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title +',the lessons book to the question' if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
                         b_lesson_2 = related_class.find_most_similar_lesson(message_text)
                         if b_lesson_2:
                             best_lessons_final.append(b_lesson_2)
