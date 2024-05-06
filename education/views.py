@@ -82,11 +82,13 @@ def lesson_dashboard(request, lesson_slug):
     # Retrieve the lesson by slug. If not found, a 404 error will be raised.
     selected_lesson = get_object_or_404(Lesson, slug=lesson_slug)
 
-    # Fetch additional data needed for the lesson dashboard
+    # Fetch transcripts, notes, problems, and tools related to the lesson
     lesson_transcripts = Transcript.objects.filter(related_lesson=selected_lesson)
     lesson_notes = Notes.objects.filter(related_lesson=selected_lesson)
-    lesson_problems = Problem.objects.filter(related_lessons=selected_lesson)
-    lesson_tools = Tool.objects.filter(associated_problem__in=lesson_problems)
+    lesson_problems = Problem.objects.filter(related_lessons=selected_lesson).prefetch_related('tools')
+    lecture_summary = selected_lesson.get_lecture_summary() if selected_lesson.transcripts.filter(source='Lecture').exists() else "No summary available"
+    lecture_exists = selected_lesson.transcripts.filter(source='Lecture').exists()
+    student_exists = selected_lesson.transcripts.filter(source='Student').exists()
 
     # Prepare the context
     context = {
@@ -94,7 +96,9 @@ def lesson_dashboard(request, lesson_slug):
         'lesson_transcripts': lesson_transcripts,
         'lesson_notes': lesson_notes,
         'lesson_problems': lesson_problems,
-        'lesson_tools': lesson_tools,
+        'lecture_summary': lecture_summary,
+        'lecture_exists': lecture_exists,
+        'student_exists': student_exists
     }
 
     return render(request, 'education/lesson_home.html', context)

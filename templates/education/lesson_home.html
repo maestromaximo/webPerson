@@ -3,72 +3,101 @@
 {% block content %}
 <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
   <!-- Main container -->
-  <div class="container mx-auto px-4 sm:px-8 py-6">
+  <div class="container mx-auto p-6">
     <!-- Top Bar with Lesson Title and Chat Button -->
-    <div class="flex justify-between mb-4">
-      <h1 class="text-3xl font-bold dark:text-gray-200">{{ selected_lesson.title }}</h1>
-      <a href="{% url 'add_transcriptions' lesson_slug=selected_lesson.slug %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-        Add Transcriptions
-      </a>
-      <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'lesson_chat' lesson_slug=selected_lesson.slug %}">Chat about this Lesson</a>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-4xl font-bold dark:text-gray-200">{{ selected_lesson.title }}</h1>
+      <div>
+        <a href="{% url 'add_transcriptions' lesson_slug=selected_lesson.slug %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+          Add Transcriptions
+        </a>
+        <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'lesson_chat' lesson_slug=selected_lesson.slug %}">Chat about this Lesson</a>
+      </div>
     </div>
 
-    <!-- Lesson Dashboard Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- Summary and Analysis Dashboard -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Main Content Area -->
       <div class="lg:col-span-8 space-y-4">
-        <!-- Transcriptions -->
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Transcriptions</h2>
-          {% for transcript in lesson_transcripts %}
-            <p>{{ transcript.content }}</p>
-            <!-- You might want to format the content or truncate if too long -->
-          {% empty %}
-            <p>No transcriptions available.</p>
-          {% endfor %}
+        <!-- Lecture Summary -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200 mb-3">Lecture Summary</h2>
+          <p class="markdown-content text-justify px-4">{{ lecture_summary }}</p>
         </div>
-        
-        <!-- Examples/Problems -->
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Examples</h2>
-          {% for problem in lesson_problems %}
-            <div>{{ problem.description }}</div>
-            <!-- Add more details as needed -->
-          {% empty %}
-            <div>No examples available.</div>
-          {% endfor %}
-        </div>
-        
-        <!-- Insights - Assuming you have a mechanism to generate insights -->
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Insights</h2>
-          <!-- Dynamic content for insights -->
-          <p>Insights based on lesson engagement and performance...</p>
+
+        <!-- Analysis Section -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200 mb-3">Detailed Analysis</h2>
+          <div class="space-y-3">
+            <p class="markdown-content text-justify px-4"><strong>Interdisciplinary Connections:</strong> {{ selected_lesson.interdisciplinary_connections }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Real World Applications:</strong> {{ selected_lesson.real_world_applications }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Creative Synthesis of Ideas:</strong> {{ selected_lesson.creative_synthesis_of_ideas }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Detail Level Comparison:</strong> {{ selected_lesson.detail_level_comparison }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Accuracy of Information:</strong> {{ selected_lesson.accuracy_of_information }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Direct Concept Comparison:</strong> {{ selected_lesson.direct_concept_comparison }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Strengths in Student Understanding:</strong> {{ selected_lesson.strengths_in_students_understanding }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Understanding Gaps:</strong> {{ selected_lesson.understanding_gaps }}</p>
+            <p class="markdown-content text-justify px-4"><strong>Comparison of Key Concepts:</strong> {{ selected_lesson.comparison_of_key_concepts }}</p>
+          </div>
         </div>
       </div>
 
-      <!-- Right Sidebar - Book Section and PDF Notes -->
+      <!-- Right Sidebar - Book Section and Transcription Status -->
       <div class="lg:col-span-4 space-y-4">
-        <!-- Book Section - Assuming the book is related to the class -->
+        <!-- Book Section -->
         {% if selected_lesson.related_class.book %}
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Book Section</h2>
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Related Book</h2>
           <div>{{ selected_lesson.related_class.book.title }}</div>
         </div>
         {% endif %}
-        
-        <!-- PDF Notes -->
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">PDF Notes</h2>
-          {% for note in lesson_notes %}
-            <!-- Assuming you have a way to view the PDF -->
-            <a href="{{ note.file.url }}" target="_blank">View Notes</a>
-          {% empty %}
-            <p>No PDF notes available.</p>
-          {% endfor %}
+
+        <!-- Transcription Status -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Transcription Status</h2>
+          <ul>
+            <li>Lecture: {% if lecture_exists %} Available {% else %} Not Available {% endif %}</li>
+            <li>Student: {% if student_exists %} Available {% else %} Not Available {% endif %}</li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+
+<style>
+  .markdown-bold {
+      font-weight: bold;
+  }
+  .markdown-list {
+      white-space: pre-line; /* This style will ensure that the newline characters are rendered */
+  }
+  </style>
+
+<script>
+  function applyMarkdownStyles(text) {
+// Replace Markdown-like bold syntax **text** with HTML <strong> tags
+text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+// Add newline before numbers followed by a dot and a whitespace
+text = text.replace(/(\d+\.\s)/g, "\n$1");
+
+// Add newline before ' - ' pattern
+text = text.replace(/(\s-\s)/g, "\n$1");
+
+return text;
+}
+
+// Query all relevant elements and apply the Markdown styles
+document.querySelectorAll('.markdown-content').forEach(element => {
+// Use innerText to get the text content to avoid interpreting the content as HTML
+const processedText = applyMarkdownStyles(element.innerText);
+
+// Then, set innerHTML to update the formatting
+element.innerHTML = processedText;
+element.classList.add('markdown-list'); // Add class to handle newlines
+});
+
+</script>
 {% endblock %}
