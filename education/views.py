@@ -122,12 +122,13 @@ def upload_and_transcribe(request):
         source (str): The source of the audio file.
         lesson_slug (str): The slug of the lesson associated with the transcription.
         class_slug (str, optional): The slug of the class associated with the lesson (optional).
-
+        title (str, optional): The title for a newly created lesson if necessary.
     """
     audio_file = request.FILES.get('audio_file')
     source = request.data.get('source')
     lesson_slug = request.data.get('lesson_slug')
     class_slug = request.data.get('class_slug', None)  # Optional class slug
+    title = request.data.get('title', 'New Lesson') # Optional title for a new lesson
 
     if not audio_file or not source or not lesson_slug:
         return Response({'error': 'Missing required parameters.'}, status=400)
@@ -139,7 +140,7 @@ def upload_and_transcribe(request):
         if not class_instance:
             return Response({'error': 'Class does not exist.'}, status=400)
         # Create a new lesson if it does not exist
-        lesson = Lesson.objects.create(title='New Lesson', related_class=class_instance)
+        lesson = Lesson.objects.create(title=title, related_class=class_instance)
 
     if not lesson:
         return Response({'error': 'Lesson does not exist and no class provided to create one.'}, status=400)
@@ -158,7 +159,7 @@ def upload_and_transcribe(request):
             related_lesson=lesson,
             source=source
         )
-
+        lesson.save() # Save the lesson to update the last updated timestamp and begin the analysis process and embedding
         return Response({'transcription': transcription_text, 'source': source, 'lesson':lesson.slug }, status=200)
     except AuthenticationError as e:
         return Response({'error': 'Authentication error.'}, status=401)
