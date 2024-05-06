@@ -14,6 +14,9 @@ import concurrent.futures
 from functools import partial
 import tempfile
 import shutil
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.files.uploadedfile import UploadedFile
+from io import BytesIO
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -643,9 +646,11 @@ def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, le
     return response.choices[0].message.content
 
 
-
-def transcribe_audio(audio_file, model="whisper-1"):
+@DeprecationWarning
+def transcribe_audioOLD(audio_file, model="whisper-1"):
     """
+    DEPRECATION: The reason behind the deprecation is because when published to a server, like pythonanywhere, the client yields an error this way openai.BadRequestError: Error code: 400 - {'error': {'message': "Unrecognized file format. Supported formats: ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']", 'type': 'invalid_request_error', 'param': None, 'code': None}}. Functional locally
+
     Transcribe the audio file using the specified model.
 
     Args:
@@ -672,3 +677,30 @@ def transcribe_audio(audio_file, model="whisper-1"):
         tmp.close()
     # print('response:', response)
     return response.text
+
+def transcribe_audio(audio_file, model="whisper-1"):
+    """
+    Transcribe the audio file using the specified model.
+
+    Args:
+        audio_file: The Django UploadedFile object from the form.
+        model (str): The model to use for transcription (defaults to "whisper-1").
+
+    Returns:
+        str: The transcribed text from the audio file.
+    """
+    # Check if the audio_file is an UploadedFile and read its content
+    if isinstance(audio_file, UploadedFile):
+        file_content_bytes = audio_file.read()
+        # Create a BytesIO buffer with the file content
+        buffer = BytesIO(file_content_bytes)
+        buffer.name = audio_file.name  # Set the file name
+        
+        # Use the OpenAI API to transcribe the audio
+        response = client.audio.transcriptions.create(
+            file=buffer,  # Pass the buffer as a file-like object
+            model=model
+        )
+        return response.text
+    else:
+        raise ValueError("The file must be an uploaded file object.")
