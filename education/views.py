@@ -18,7 +18,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-
+from django.urls import reverse
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
@@ -223,11 +223,15 @@ def chat(request, class_slug=None, lesson_slug=None):
                     try:
                         book_slug = related_class.book.slug if related_class.book else None
                         pinecone_result = query_pinecone(message_text, namespace=book_slug) if book_slug else query_pinecone(message_text)
+                        
+                        # print(f"DEBUG, related_class.book: {related_class.book}")
                         enhanced_query += f"Most relevant paragraph from '{related_class.book.title+",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
+                        
                         b_lesson_2 = related_class.find_most_similar_lesson(message_text)
                         if b_lesson_2:
                             best_lessons_final.append(b_lesson_2)
-                        enhanced_query += f"Most relevant lesson from this class that could answer the question: {b_lesson_2.title}:\n{b_lesson_2.get_lecture_summary()}\n"
+                            enhanced_query += f"Most relevant lesson from this class that could answer the question: {b_lesson_2.title}:\n{b_lesson_2.get_lecture_summary()}\n"
+                            print(f"DEBUG, best_lesson_2: {b_lesson_2.title}")
                     except Exception as e:
                         print("Error querying Pinecone", e)
                  
@@ -239,11 +243,13 @@ def chat(request, class_slug=None, lesson_slug=None):
                     try:
                         book_slug = related_class.book.slug if related_class.book else None
                         pinecone_result = query_pinecone(message_text, namespace=book_slug) if book_slug else query_pinecone(message_text)
-                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title+",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
+                        # print(f"DEBUG, related_class.book: {related_class.book.title}")
+                        enhanced_query += f"Most relevant paragraph from '{related_class.book.title +",the lessons book to the question" if book_slug else 'academic resources to the question'}': \"{pinecone_result}\"\n"
                         b_lesson_2 = related_class.find_most_similar_lesson(message_text)
                         if b_lesson_2:
                             best_lessons_final.append(b_lesson_2)
-                        enhanced_query += f"Most relevant lesson from this class that could answer the last question: {b_lesson_2.title}:\n{b_lesson_2.get_lecture_summary()}\n"
+                        
+                            enhanced_query += f"Most relevant lesson from this class that could answer the last question: {b_lesson_2.title}:\n{b_lesson_2.get_lecture_summary()}\n"
                     except Exception as e:
                         print("Error querying Pinecone", e)
                     enhanced_query += f"Given all of the contextual information above, please answer the following question from the student:\n\"{message_text}\""
@@ -279,9 +285,9 @@ def chat(request, class_slug=None, lesson_slug=None):
                     ##Now we have the pinecone result and the best lesson, we can now enhance the query with this information but if we miss any of them we just enhance with the ones we do have
                     enhanced_query = None
                     if pinecone_result is not None and b_lesson is not None:
-                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.name}.\nFor context, here is the most relevant 500 word long paragraph from the book, likley related to the question,you may use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nThe most related lesson tittle to the question from this class is {b_lesson.title}, and its summary is:\n{b_lesson.get_lecture_summary()}\nPlease answer this user question given the information above and your knowledge:\n\"{message_text}\""
+                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.title}.\nFor context, here is the most relevant 500 word long paragraph from the book, likley related to the question,you may use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nThe most related lesson tittle to the question from this class is {b_lesson.title}, and its summary is:\n{b_lesson.get_lecture_summary()}\nPlease answer this user question given the information above and your knowledge:\n\"{message_text}\""
                     elif pinecone_result is not None and b_lesson is None:
-                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.name}.\nFor context, here is the most relevant 500 word long paragraph from the book, likley related to the question,you may use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nPlease answer this user question given that:\n\"{message_text}\""
+                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.title}.\nFor context, here is the most relevant 500 word long paragraph from the book, likley related to the question,you may use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nPlease answer this user question given that:\n\"{message_text}\""
                     elif pinecone_result is None and b_lesson is not None:
                         enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name}.\nFor context, t he most related lesson tittle to the question from this class is {b_lesson.title}, and its summary is:\n{b_lesson.get_lecture_summary()}\nPlease answer this user question given the information above and your knowledge:\n\"{message_text}\""
                     else:## if all fails and we get two nones, lets try to do a easy super search of pinecone with no namespace within a try catch and if that fails then just a normal response text
@@ -320,9 +326,9 @@ def chat(request, class_slug=None, lesson_slug=None):
                     ##Now we have the pinecone result and the best lesson, we can now enhance the query with this information but if we miss any of them we just enhance with the ones we do have
                     enhanced_query = None
                     if pinecone_result is not None and b_lesson is not None:
-                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.name}.\nFor context, here is the most relevant 500 word long paragraph from an academic book likely related to the question, use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nThis is the name of the lesson and its lecture transcript summary:\n{b_lesson.title}:\n{b_lesson.interdisciplinary_connections}\n Strengths in student's understanding: {b_lesson.strengths_in_students_understanding}\n Understanding gaps: {b_lesson.understanding_gaps}\nPlease answer this user question given that:\n\"{message_text}\""
+                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.title}.\nFor context, here is the most relevant 500 word long paragraph from an academic book likely related to the question, use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nThis is the name of the lesson and its lecture transcript summary:\n{b_lesson.title}:\n{b_lesson.interdisciplinary_connections}\n Strengths in student's understanding: {b_lesson.strengths_in_students_understanding}\n Understanding gaps: {b_lesson.understanding_gaps}\nPlease answer this user question given that:\n\"{message_text}\""
                     elif pinecone_result is not None and b_lesson is None:
-                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.name}.\nFor context, here is the most relevant 500 word long paragraph from an academic book likely related to the question, use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nPlease answer this user question given that:\n\"{message_text}\""
+                        enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name} and it comes from this book {class_instance.book.title}.\nFor context, here is the most relevant 500 word long paragraph from an academic book likely related to the question, use it as a base to answer the question or support it if relevant:\nContext:\"{pinecone_result}\"\nPlease answer this user question given that:\n\"{message_text}\""
                     elif pinecone_result is None and b_lesson is not None:
                         enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name}.\nFor context, this is the name of the lesson and its lecture transcript summary:\n{b_lesson.title}:\n{b_lesson.interdisciplinary_connections}\n Strengths in student's understanding: {b_lesson.strengths_in_students_understanding}\n Understanding gaps: {b_lesson.understanding_gaps}\nPlease answer this user question given that:\n\"{message_text}\""
                     else:## if all fails and we get two nones, lets try to do a easy super search of pinecone with no namespace within a try catch and if that fails then just a normal response text
@@ -341,7 +347,7 @@ def chat(request, class_slug=None, lesson_slug=None):
                 try:
                     pinecone_result = query_pinecone(message_text)
                     enhanced_query = f"This is a system message from a RAG system, attached is the most relevant 500 word long paragraph from an academic book likely related to the question, use it as a base to answer the question or support it if relevant.\nContext:\"{pinecone_result}\"\nNow this is the original question from the user, please answer it accordingly now:\n\"{message_text}\""
-                    
+                    print("Enhanced query with pinecone result", enhanced_query)
                     ### Here as an extra we can find the most relevant lesson, from all classes and return the class and lesson to the user but only if first question. UPDATE: we look now at all classes and retrive the best lesson from each
                     if new_session_created: ##only run this if its the first question and it is a super search
                         all_classes = Class.objects.all()
@@ -359,7 +365,7 @@ def chat(request, class_slug=None, lesson_slug=None):
                     
                     response_text = get_gpt_response_with_context(session, enhanced_query)
                 except Exception as e:
-                    print("Error enhancing query",e)
+                    print("Error enhancing query no context",e)
                     response_text = get_gpt_response_with_context(session, message_text)
             else:    
                 response_text = get_gpt_response_with_context(session, message_text)
@@ -367,7 +373,21 @@ def chat(request, class_slug=None, lesson_slug=None):
         # Create an assistant message
         Message.objects.create(session=session, text=response_text, role='assistant')
 
-        return JsonResponse({'response': response_text, 'session_id': session.id})
+        ##if best lessons is created we need to send the best lessons to the front end maybe add an if statement to handle this
+        if best_lessons_final:
+            best_lessons_data = [{
+                'title': lesson.title,
+                'summary': lesson.get_lecture_summary(),
+                'url': reverse('lesson_dashboard', kwargs={'lesson_slug': lesson.slug})
+            } for lesson in best_lessons_final]
+        else:
+            best_lessons_data = []
+
+        return JsonResponse({
+            'response': response_text,
+            'session_id': session.id,
+            'best_lessons': best_lessons_data  # Add this line to include lesson details
+        })
 
 @csrf_exempt
 @require_http_methods(["GET"])

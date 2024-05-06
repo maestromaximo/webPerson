@@ -100,29 +100,43 @@ document.getElementById('sendMessage').addEventListener('click', function() {
     })
     .then(response => response.json())
     .then(data => {
-        const chatWindow = document.getElementById('chat');
-        const userMessageDiv = document.createElement('div');
-        userMessageDiv.className = 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto';
-        userMessageDiv.textContent = message;
-        chatWindow.appendChild(userMessageDiv);
+    const chatWindow = document.getElementById('chat');
+    const userMessageDiv = document.createElement('div');
+    userMessageDiv.className = 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto';
+    userMessageDiv.textContent = message;
+    chatWindow.appendChild(userMessageDiv);
 
-        // Check if a new session ID was returned and update currentSessionId if so
-        if (data.session_id && currentSessionId !== data.session_id) {
-            currentSessionId = data.session_id;
-            console.log("New session created, session ID updated:", currentSessionId);
-        }
+    if (data.session_id && currentSessionId !== data.session_id) {
+        currentSessionId = data.session_id;
+        console.log("New session created, session ID updated:", currentSessionId);
+    }
 
-        if (data.response) {
-            const responseElement = document.createElement('div');
-            responseElement.className = 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
-            responseElement.textContent = data.response;
-            chatWindow.appendChild(responseElement);
-        }
+    if (data.response) {
+        const responseElement = document.createElement('div');
+        responseElement.className = 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
+        responseElement.textContent = data.response;
+        chatWindow.appendChild(responseElement);
+    }
 
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        messageInput.value = '';
-        superSearchToggle.checked = false;  // Reset the toggle after sending the message
-    })
+    // Handle rendering best lessons if any
+    if (data.best_lessons && data.best_lessons.length > 0) {
+        const lessonsContainer = document.createElement('div');
+        lessonsContainer.className = 'flex overflow-x-auto py-2 space-x-2';
+        data.best_lessons.forEach(lesson => {
+            const lessonDiv = document.createElement('a');
+            lessonDiv.href = lesson.url;
+            lessonDiv.className = 'bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg cursor-pointer';
+            // lessonDiv.textContent = lesson.title + ": " + lesson.summary;
+            lessonDiv.textContent = lesson.title;
+            lessonsContainer.appendChild(lessonDiv);
+        });
+        chatWindow.appendChild(lessonsContainer);
+    }
+
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    messageInput.value = '';
+    superSearchToggle.checked = false;
+})
     .catch(error => console.error('Error:', error));
 });
 

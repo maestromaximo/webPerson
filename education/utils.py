@@ -10,6 +10,8 @@ from pinecone import Pinecone
 from tqdm import tqdm
 import itertools
 import numpy as np
+import concurrent.futures
+from functools import partial
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -454,7 +456,15 @@ def upload_book_to_index(pdf_path, book_name_slug):
 
     print("Book embeddings with metadata uploaded to Pinecone index.")
 
-def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embedding-3-large", namespace=None):
+def get_all_namespaces():
+    """Get all the namespaces in the Pinecone index.
+    Returns a list of stings representing the namespaces."""
+    index_stats = pc_index.describe_index_stats()
+    namespaces_dict = index_stats['namespaces']
+    return list(namespaces_dict.keys())
+
+@DeprecationWarning
+def query_pineconeOLD(query, embed=True, top_k=5, return_top=True, model="text-embedding-3-large", namespace=None):
     """
     Query Pinecone index with either a text string or a vector, specifying an optional namespace.
     :param query: Text to embed or a vector.
@@ -473,15 +483,22 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
 
     # Prepare query options
     query_options = {
-        "queries": [query_vector],
+        "vector": query_vector,
         "top_k": top_k,
         "include_metadata": True
     }
     if namespace:
         query_options["namespace"] = namespace
+    else:
+        namespaces = get_all_namespaces()
+        ##in parallel query all namespaces
+        
+    
 
     # Query Pinecone with metadata inclusion and optional namespace
+    
     results = pc_index.query(**query_options)
+    # print('DEBUG: results:', results)
 
     # Extract the IDs, scores, and text from the top results
     matches = results['matches']
@@ -492,11 +509,57 @@ def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embe
 
     if return_top:
         # Return only the top result with the highest score
-        top_result = sorted_results[0] if sorted_results else None
+        top_result = sorted_results[0].get('text', 'none') if sorted_results else None
         return top_result
     else:
         # Return all top_k results
         return sorted_results
+    
+def query_pinecone(query, embed=True, top_k=5, return_top=True, model="text-embedding-3-large", namespace=None):
+    """
+    Query Pinecone index with either a text string or a vector, specifying an optional namespace.
+    If no namespace is provided, queries all namespaces in parallel and returns the top result across all.
+    """
+    if embed:
+        # Generate an embedding if the input is text
+        query_vector = generate_embedding(query, model=model)
+    else:
+        # Assume the input is already a vector
+        query_vector = query
+
+    if namespace:
+        return single_namespace_query(query_vector, top_k, namespace) if not return_top else single_namespace_query(query_vector, top_k, namespace)[0]['text']
+    else:
+        return query_all_namespaces(query_vector, top_k)
+
+def single_namespace_query(query_vector, top_k, namespace):
+    """Query a single namespace and return the results."""
+    query_options = {
+        "vector": query_vector,
+        "top_k": top_k,
+        "include_metadata": True,
+        "namespace": namespace
+    }
+    results = pc_index.query(**query_options)
+    matches = results['matches']
+    return [{"text": match["metadata"]["text"], "score": float(match["score"])} for match in matches]
+
+def query_all_namespaces(query_vector, top_k):
+    """Query all namespaces in parallel and return the top result."""
+    namespaces = get_all_namespaces()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        # Prepare partial function to query each namespace
+        func = partial(single_namespace_query, query_vector, top_k)
+        # Map function across all namespaces
+        futures = {executor.submit(func, namespace=ns): ns for ns in namespaces}
+        all_results = []
+
+        for future in concurrent.futures.as_completed(futures):
+            all_results.extend(future.result())
+
+    # Aggregate and sort results from all namespaces
+    all_results.sort(key=lambda x: x['score'], reverse=True)
+    return all_results[0]['text'] if all_results else None
 
 
 

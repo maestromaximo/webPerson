@@ -42,7 +42,7 @@ class LessonEmbedding(models.Model):
     lesson = models.OneToOneField('Lesson', on_delete=models.CASCADE, related_name='embedding')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    vector = models.JSONField()
+    vector = models.JSONField(null = True, blank = True)
 
     def update_embedding(self):
         """Generates or updates the embedding for the lesson's lecture transcript."""
@@ -51,6 +51,8 @@ class LessonEmbedding(models.Model):
             if not lecture_transcript.summarized:
                 lecture_transcript.summarize()
             self.vector = generate_embedding(lecture_transcript.summarized)
+            # print(f"Updated embedding for {self.lesson.title}")
+            # print(self.vector)
             self.save()
     
 class Class(models.Model):
@@ -245,8 +247,8 @@ class Lesson(models.Model):
 
     def embed(self):
         """Ensures this lesson has an up-to-date embedding."""
-        embedding, created = LessonEmbedding.objects.get_or_create(lesson=self)
-        if not created:
+        embedding, created = LessonEmbedding.objects.get_or_create(lesson=self, defaults={'lesson': self})
+        if created:
             embedding.update_embedding()
 
     def __str__(self):
@@ -256,7 +258,7 @@ class Lesson(models.Model):
         self.slug = slugify(self.title)
         if not self.analyzed:
             self.generate_analysis()
-            self.embed()
+        self.embed()
         super().save(*args, **kwargs)
 
 class Problem(models.Model):
