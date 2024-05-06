@@ -7,6 +7,9 @@
     <!-- Top Bar with Lesson Title and Chat Button -->
     <div class="flex justify-between mb-4">
       <h1 class="text-3xl font-bold dark:text-gray-200">{{ selected_lesson.title }}</h1>
+      <a href="{% url 'add_transcriptions' lesson_slug=selected_lesson.slug %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        Add Transcriptions
+      </a>
       <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'lesson_chat' lesson_slug=selected_lesson.slug %}">Chat about this Lesson</a>
     </div>
 

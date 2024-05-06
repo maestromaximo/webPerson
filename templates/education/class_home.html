@@ -4,10 +4,13 @@
 <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
   <!-- Main container -->
   <div class="container mx-auto px-4 sm:px-8 py-6">
-    <!-- Top Bar with Class Name and Chat Button -->
-    <div class="flex justify-between mb-4">
+     <!-- Top Bar with Class Name and Chat Button -->
+     <div class="flex justify-between mb-4">
       <h1 class="text-3xl font-bold dark:text-gray-200">{{ selected_class.name }} Dashboard</h1>
-      <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'class_chat' class_slug=selected_class.slug %}">Chat about this Class</a>
+      <div>
+        <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'class_chat' class_slug=selected_class.slug %}">Chat about this Class</a>
+        <a class="ml-4 bg-green-500 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'add_lesson' class_slug=selected_class.slug %}">Add Lesson</a>
+      </div>
     </div>
 
     <!-- Dashboard Grid -->
