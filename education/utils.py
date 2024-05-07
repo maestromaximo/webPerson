@@ -17,6 +17,8 @@ import shutil
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.uploadedfile import UploadedFile
 from io import BytesIO
+from pydub import AudioSegment
+
 
 MODELS = {
     'gpt-4': 'gpt-4-turbo-preview',
@@ -680,27 +682,49 @@ def transcribe_audioOLD(audio_file, model="whisper-1"):
 
 def transcribe_audio(audio_file, model="whisper-1"):
     """
-    Transcribe the audio file using the specified model.
+    Transcribe the audio file using the specified model, handling large files by segmenting them into smaller chunks.
 
     Args:
         audio_file: The Django UploadedFile object from the form.
         model (str): The model to use for transcription (defaults to "whisper-1").
 
     Returns:
-        str: The transcribed text from the audio file.
+        str: The concatenated transcribed text from all segments of the audio file.
     """
-    # Check if the audio_file is an UploadedFile and read its content
     if isinstance(audio_file, UploadedFile):
-        file_content_bytes = audio_file.read()
-        # Create a BytesIO buffer with the file content
-        buffer = BytesIO(file_content_bytes)
-        buffer.name = audio_file.name  # Set the file name
+        # Calculate file size in megabytes
+        file_size_mb = audio_file.size / (1024 * 1024)
+        ten_minutes = 10 * 60 * 1000  # Duration of each audio segment in milliseconds
         
-        # Use the OpenAI API to transcribe the audio
-        response = client.audio.transcriptions.create(
-            file=buffer,  # Pass the buffer as a file-like object
-            model=model
-        )
-        return response.text
+        # Read the audio file content
+        audio_content = AudioSegment.from_file_using_temporary_files(audio_file)
+
+        # Check if the file needs to be segmented
+        if file_size_mb > 23:
+            parts = [audio_content[i:i + ten_minutes] for i in range(0, len(audio_content), ten_minutes)]
+        else:
+            parts = [audio_content]
+
+        # Transcribe each part and concatenate the results
+        transcription_results = []
+        for part in parts:
+            buffer = BytesIO()
+            part.export(buffer, format="mp3")  # Export to buffer as mp3
+            buffer.seek(0)  # Rewind buffer to the start
+            buffer.name = audio_file.name  # Set the file name for the buffer
+            
+            try:
+                response = client.audio.transcriptions.create(
+                    file=buffer,
+                    model=model
+                )
+                transcription_results.append(response.text)
+            except Exception as e:
+                # Handle transcription errors, possibly log them, and continue with next part
+                print(f"Error transcribing part: {str(e)}")
+        
+        # Concatenate all transcription texts
+        return " ".join(transcription_results)
+
     else:
         raise ValueError("The file must be an uploaded file object.")
