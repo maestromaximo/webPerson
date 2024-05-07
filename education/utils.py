@@ -21,7 +21,7 @@ from pydub import AudioSegment
 
 
 MODELS = {
-    'gpt-4': 'gpt-4-turbo-preview',
+    'gpt-4': 'gpt-4-turbo',
     'gpt-4-vision': 'gpt-4-vision-preview',
     'gpt-3.5': 'gpt-3.5-turbo',
     'dall-e-3': 'dall-e-3',
@@ -585,7 +585,7 @@ def cosine_similarity(vec1, vec2):
 
 
 
-def generate_chat_completion(user_question, use_gpt4=False):
+def generate_chat_completionOLD(user_question, use_gpt4=False):
     """
     Generates a chat completion using OpenAI's GPT-3.5-turbo or GPT-4 model.
 
@@ -596,7 +596,7 @@ def generate_chat_completion(user_question, use_gpt4=False):
     Returns:
     str: The generated completion message.
     """
-    model = "gpt-4" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
     completion = client.chat.completions.create(
         model=model,
         messages=[
@@ -605,6 +605,38 @@ def generate_chat_completion(user_question, use_gpt4=False):
         ]
     )
     return completion.choices[0].message.content
+
+def generate_chat_completion(user_question, use_gpt4=False):
+    """
+    Generates a chat completion using OpenAI's GPT-3.5-turbo or GPT-4 model.
+    If the context length exceeds the maximum for GPT-3.5-turbo, it retries with GPT-4.
+
+    Args:
+    user_question (str): The user's question.
+    use_gpt4 (bool): Whether to use GPT-4 model or not (defaults to False).
+
+    Returns:
+    str: The generated completion message.
+    """
+    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_question}
+            ]
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        if 'context_length_exceeded' in str(e):
+            if not use_gpt4:  # Only retry with GPT-4 if it wasn't already using it
+                return generate_chat_completion(user_question, use_gpt4=True)
+            else:
+                # Handle case where GPT-4 also exceeds context length or throw the error if needed
+                raise ValueError("Error: The provided context is too long, even for GPT-4.")
+        else:
+            raise e
 
 def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, lesson_slug=None, class_slug=None):
     """
@@ -620,7 +652,7 @@ def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, le
     """
     # Select the appropriate model based on the function argument
     from .models import Message
-    model_version = "gpt-4" if use_gpt4 else "gpt-3.5-turbo"
+    model_version = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
 
     # Build the conversation history for context
     messages = session.messages.all()
