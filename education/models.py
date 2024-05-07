@@ -320,9 +320,10 @@ class Transcript(models.Model):
             self.save()
 
 class Notes(models.Model):
+    name= models.CharField(max_length=255, null=True, blank=True)
     file = models.FileField(upload_to='notes/')
     text_summary = models.TextField(null=True, blank=True)
-    related_lesson = models.ForeignKey(Lesson, related_name='notes', on_delete=models.CASCADE)
+    related_lesson = models.ForeignKey(Lesson, related_name='notes', on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Assignment(models.Model):

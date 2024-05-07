@@ -151,3 +151,6 @@ INTERNAL_IPS = [
     "127.0.0.1",
     # ...
 ]
+
+EMAIL_HOST_USER = os.getenv("EMAIL_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASSWORD")
