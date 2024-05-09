@@ -17,12 +17,14 @@ openai_key=os.getenv("OPENAI_API_KEY")
 openai.api_key = openai_key
 client = openai.OpenAI()
 
+from django.contrib.admin.views.decorators import staff_member_required
+
+@staff_member_required
 @login_required
 def interface_menu(request):
-
     return render(request, 'interfaceMainMenu.html', {})
 
-
+@staff_member_required
 @csrf_exempt
 def chat_viewDEPRECATED(request):
     if request.method == 'POST':
@@ -61,7 +63,8 @@ def chat_viewDEPRECATED(request):
         return JsonResponse({'response': assistant_message['content']})
     else:
         return JsonResponse({'error': 'Invalid request'}, status=400)
-    
+
+@staff_member_required   
 @csrf_exempt
 def chat_view(request):
     if request.method == 'POST':
@@ -117,7 +120,7 @@ def chat_view(request):
     else:
         return JsonResponse({'error': 'Invalid request'}, status=400)
     
-
+@staff_member_required
 @csrf_exempt
 @login_required
 def chat_viewddd(request):
@@ -170,7 +173,7 @@ def chat_viewddd(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
     
-        
+@staff_member_required        
 @csrf_exempt
 def fetch_session_messages(request, session_id):
     if not request.user.is_authenticated:
@@ -185,7 +188,7 @@ def fetch_session_messages(request, session_id):
     except ChatSession.DoesNotExist:
         return JsonResponse({'error': 'Chat session not found'}, status=404)
 
-
+@staff_member_required
 @login_required
 def chat(request, model=None):
     # Delete empty chat sessions for the current user
@@ -221,9 +224,10 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.utils.text import slugify
 from tqdm import tqdm
+from django.contrib.auth.models import User
 
 @csrf_exempt
-def login_view(request):
+def login_viewOLD(request):
     if request.method == 'POST':
         login_identifier = request.POST.get('username')  # Can be an email or username
         password = request.POST.get('password')
@@ -233,6 +237,7 @@ def login_view(request):
             if "@" in login_identifier:  # Assume it's an email
                 profile = Profile.objects.get(email=login_identifier)
             else:
+                # print('debugging username')
                 profile = Profile.objects.get(username=login_identifier)
         except Profile.DoesNotExist:
             # Here you would handle the logic to offer a signup option
@@ -250,16 +255,46 @@ def login_view(request):
         # If not POST, just show the login form (assuming you have a template named 'login.html')
         return render(request, 'login_page.html')
     
-def logout_view(request):
+@csrf_exempt
+def login_view(request):
     if request.method == 'POST':
-        logout(request)
-        return JsonResponse({'message': 'Logout successful'})
+        login_identifier = request.POST.get('username')  # Can be an email or username
+        password = request.POST.get('password')
+
+        # Attempt to find a profile by username or email
+        try:
+            if "@" in login_identifier:  # Assume it's an email
+                profile = User.objects.get(email=login_identifier)
+            else:
+                # print('debugging username')
+                profile = User.objects.get(username=login_identifier)
+        except Profile.DoesNotExist:
+            # Here you would handle the logic to offer a signup option
+            # For this example, we'll just return an error
+            return JsonResponse({'error': 'Profile not found. Consider signing up?'}, status=404)
+
+        # Authenticate the found user
+        user = authenticate(request, username=login_identifier, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('home')
+            # return JsonResponse({'message': 'Login successful'})
+        else:
+            return redirect('login')
+            return JsonResponse({'error': 'Invalid credentials'}, status=401)
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        # If not POST, just show the login form (assuming you have a template named 'login.html')
+        if request.user.is_authenticated:
+            return redirect('home')
+        return render(request, 'login_page.html')
+    
+def logout_view(request):
+    logout(request)
+    return redirect('login')
     
 
 #######################
-
+@staff_member_required
 @login_required
 def documenter(request):
     if request.method == 'POST' and 'code-title' in request.POST and request.POST['code-title'].strip():
@@ -327,7 +362,7 @@ def documenter(request):
         }
         return render(request, 'documenter.html', context)
 
-
+@staff_member_required
 @login_required
 @csrf_exempt
 def save_audio(request):

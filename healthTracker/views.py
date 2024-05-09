@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from .models import FoodItem, Meal
 from .utils import meal_recipe_creator
 import os
+from django.contrib.admin.views.decorators import staff_member_required
+
 
 def home(request):
     
@@ -81,7 +83,7 @@ def confirm_data(request):
         return JsonResponse({'error': 'Invalid request'}, status=400)
     
 
-
+@staff_member_required
 def food_modification(request):
     if request.method == 'POST':
         # Parsing form data
@@ -122,7 +124,8 @@ def food_modification(request):
         # Display the form for the most recent FoodItem
         food_item = FoodItem.objects.last()  # Get the most recent FoodItem
         return render(request, 'food_modification.html', {'food_item': food_item})
-    
+
+@staff_member_required
 def main_meal_planner(request):
     # Determine the current week
     today = datetime.today().date()  # Ensure this is a date object
@@ -173,6 +176,7 @@ def main_meal_planner(request):
 
     return render(request, 'meal_planner_main.html', context)
 
+@staff_member_required
 def meal_detail(request, day):
     # Convert the day string to a date object
     meal_date = datetime.strptime(day, '%Y-%m-%d').date()

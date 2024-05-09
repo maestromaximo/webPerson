@@ -6,10 +6,12 @@
   <div class="container mx-auto px-4 sm:px-8 py-6">
      <!-- Top Bar with Class Name and Chat Button -->
      <div class="flex justify-between mb-4">
-      <h1 class="text-3xl font-bold dark:text-gray-200">{{ selected_class.name }} Dashboard</h1>
+      <h1 class="text-3xl font-bold">{{ selected_class.name }} Dashboard</h1>
       <div>
+        {% if request.user.is_staff or request.user.is_superuser %}
         <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'class_chat' class_slug=selected_class.slug %}">Chat about this Class</a>
         <a class="ml-4 bg-green-500 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'add_lesson' class_slug=selected_class.slug %}">Add Lesson</a>
+        {% endif %}
       </div>
     </div>
 
@@ -59,7 +61,7 @@
         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200 mb-3">Lessons</h2>
         <ul class="space-y-2">
           {% for lesson in class_lessons %}
-            <li class="text-gray-700 dark:text-gray-300 hover:text-gray-800 dark:hover:text-blue-400 transition duration-150 ease-in-out cursor-pointer"><a href="{%url 'lesson_dashboard' lesson_slug=lesson.slug%}">{{ lesson.title }}</a></li>
+            <li class="text-gray-700 dark:text-gray-300 hover:text-gray-800 hover:text-blue-400 transition duration-150 ease-in-out cursor-pointer"><a href="{%url 'lesson_dashboard' lesson_slug=lesson.slug%}">{{ lesson.title }}</a></li>
           {% empty %}
             <li class="text-gray-500 dark:text-gray-400">No lessons available.</li>
           {% endfor %}

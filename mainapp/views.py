@@ -14,6 +14,7 @@ import random
 from django.contrib.auth.decorators import login_required
 
 from collections import defaultdict
+from django.contrib.admin.views.decorators import staff_member_required
 
 
 def privacy(request):
@@ -114,7 +115,8 @@ def purchase_made_endpoint(request):
             return JsonResponse({'status': 'error', 'message': 'Error processing request'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed.'})
-    
+
+@staff_member_required  
 @login_required
 def classification_menu(request):
     if request.method == 'POST':
@@ -151,6 +153,7 @@ def classification_menu(request):
     }
     return render(request, 'classification_main.html', context)
 
+@staff_member_required
 @login_required
 def dashboard(request):
     """
@@ -255,6 +258,7 @@ def dashboard(request):
     
     return render(request, 'dashboard.html', context)
 
+@staff_member_required
 @login_required
 def budget(request):
     """
@@ -372,7 +376,7 @@ def budget(request):
     }
     return render(request, 'budgets.html', context)
 
-
+@staff_member_required
 @login_required
 def update_budget(request):
     if request.method == 'POST':

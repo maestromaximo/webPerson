@@ -193,6 +193,9 @@ class Lesson(models.Model):
     slug = models.SlugField(null=True, blank=True)
     analyzed = models.BooleanField(default=False)  # New field to track analysis status
 
+    chapter_title = models.CharField(max_length=255, null=True, blank=True)
+    chapter_page_number = models.IntegerField(null=True, blank=True)
+
     interdisciplinary_connections = models.TextField(null=True, blank=True)
     real_world_applications = models.TextField(null=True, blank=True)
     creative_synthesis_of_ideas = models.TextField(null=True, blank=True)
@@ -331,6 +334,7 @@ class Assignment(models.Model):
     due_date = models.DateTimeField()
     related_class = models.ForeignKey(Class, related_name='assignments', on_delete=models.CASCADE)
     pdf = models.FileField(upload_to='assignments/', null=True, blank=True)
+    answer_pdf = models.FileField(upload_to='assignments/answers/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.related_class.name} assignment due {self.due_date}"

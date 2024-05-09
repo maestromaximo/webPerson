@@ -6,13 +6,16 @@
   <div class="container mx-auto p-6">
     <!-- Top Bar with Lesson Title and Chat Button -->
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-4xl font-bold dark:text-gray-200">{{ selected_lesson.title }}</h1>
+      <h1 class="text-4xl font-bold">{{ selected_lesson.title }}</h1>
       <div>
+        {% if request.user.is_staff or request.user.is_superuser %}
         <a href="{% url 'add_transcriptions' lesson_slug=selected_lesson.slug %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
           Add Transcriptions
         </a>
         <a class="bg-blue-500 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" href="{% url 'lesson_chat' lesson_slug=selected_lesson.slug %}">Chat about this Lesson</a>
+        {% endif %}
       </div>
+      
     </div>
 
     <!-- Summary and Analysis Dashboard -->
@@ -25,21 +28,50 @@
           <p class="markdown-content text-justify px-4">{{ lecture_summary }}</p>
         </div>
 
+        
         <!-- Analysis Section -->
         <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200 mb-3">Detailed Analysis</h2>
           <div class="space-y-3">
-            <p class="markdown-content text-justify px-4"><strong>Interdisciplinary Connections:</strong> {{ selected_lesson.interdisciplinary_connections }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Real World Applications:</strong> {{ selected_lesson.real_world_applications }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Creative Synthesis of Ideas:</strong> {{ selected_lesson.creative_synthesis_of_ideas }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Detail Level Comparison:</strong> {{ selected_lesson.detail_level_comparison }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Accuracy of Information:</strong> {{ selected_lesson.accuracy_of_information }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Direct Concept Comparison:</strong> {{ selected_lesson.direct_concept_comparison }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Strengths in Student Understanding:</strong> {{ selected_lesson.strengths_in_students_understanding }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Understanding Gaps:</strong> {{ selected_lesson.understanding_gaps }}</p>
-            <p class="markdown-content text-justify px-4"><strong>Comparison of Key Concepts:</strong> {{ selected_lesson.comparison_of_key_concepts }}</p>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Interdisciplinary Connections:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.interdisciplinary_connections }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Real World Applications:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.real_world_applications }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Creative Synthesis of Ideas:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.creative_synthesis_of_ideas }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Detail Level Comparison:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.detail_level_comparison }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Accuracy of Information:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.accuracy_of_information }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Direct Concept Comparison:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.direct_concept_comparison }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Strengths in Student Understanding:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.strengths_in_students_understanding }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Understanding Gaps:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.understanding_gaps }}</p>
+            </div>
+            <div class="bg-white dark:bg-white p-2 rounded">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Comparison of Key Concepts:</h3>
+              <p class="markdown-content text-justify px-4">{{ selected_lesson.comparison_of_key_concepts }}</p>
+            </div>
           </div>
         </div>
+
       </div>
 
       <!-- Right Sidebar - Book Section and Transcription Status -->
@@ -48,8 +80,13 @@
         {% if selected_lesson.related_class.book %}
         <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Related Book</h2>
-          <div>{{ selected_lesson.related_class.book.title }}</div>
-        </div>
+          <div><a href="{{ selected_lesson.related_class.book.pdf.url }}">{{ selected_lesson.related_class.book.title }}</a></div>
+            {% if section_title and page_number %}
+            <p>You may find information related to this lesson in the section "{{ section_title }}" on page {{ page_number }}.</p>
+            {% else %}
+            <p>Sorry, the information related to this lesson could not be found.</p>
+            {% endif %}
+      </div>
         {% endif %}
 
         <!-- Transcription Status -->

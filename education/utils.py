@@ -637,6 +637,37 @@ def generate_chat_completion(user_question, use_gpt4=False):
                 raise ValueError("Error: The provided context is too long, even for GPT-4.")
         else:
             raise e
+        
+def extract_the_most_likely_title(lesson_summary, book_index, use_gpt4=False):
+    """
+    Generates a likely book index section based on the lesson summary using OpenAI's GPT model.
+
+    Args:
+    lesson_summary (str): The lesson summary text.
+    book_index (str): The book index text.
+    use_gpt4 (bool): Whether to use GPT-4 model or not (defaults to False).
+
+    Returns:
+    str: The generated book index section.
+    """
+    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    completion = client.chat.completions.create(
+        model=model,
+        response_format={ "type": "json_object" },
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant dessigned to always output JSON."},
+            {"role": "user", "content": f"Please output the most likely book index title and page number for the following lesson summary:\n{lesson_summary}\nGiven the book index:\n{book_index}\nSample output:"+ "{'title': 'Chapter 1: Introduction', 'page': '1'}"},
+        ]
+    )
+    response = completion.choices[0].message.content
+    try:
+        json_response = json.loads(response)
+        ##return the title and page number and we return independent of the keys they two values from the expected dictionary output, but we return none if there are not exactly two values
+        values = list(json_response.values())
+        return values[0], values[1] if len(values) == 2 else None
+    except Exception as e:
+        print(f"Error parsing JSON response: {str(e)}")
+        return None
 
 def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, lesson_slug=None, class_slug=None):
     """

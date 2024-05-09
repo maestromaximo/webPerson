@@ -6,7 +6,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 
 from education.forms import LessonForm, TranscriptionUploadForm
-from education.utils import generate_chat_completion, get_gpt_response_with_context, query_pinecone, transcribe_audio
+from education.utils import extract_the_most_likely_title, generate_chat_completion, get_gpt_response_with_context, query_pinecone, transcribe_audio
 # import openai
 from .models import ChatSession, Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
 from rest_framework.decorators import api_view
@@ -20,6 +20,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
+from django.contrib.admin.views.decorators import staff_member_required
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
@@ -90,6 +91,27 @@ def lesson_dashboard(request, lesson_slug):
     lecture_exists = selected_lesson.transcripts.filter(source='Lecture').exists()
     student_exists = selected_lesson.transcripts.filter(source='Student').exists()
 
+    try:
+        related_book = selected_lesson.related_class.book if selected_lesson.related_class.book else None
+    except:
+        related_book = None
+        print("no related book found")
+    section_title = None
+    page_number = None
+
+    if selected_lesson.chapter_title and selected_lesson.chapter_page_number:
+        section_title = selected_lesson.chapter_title
+        page_number = selected_lesson.chapter_page_number
+    elif related_book and related_book.index_contents and lecture_summary not in [None, "No summary available"]:
+        try:
+            section_title, page_number = extract_the_most_likely_title(book_index=related_book.index_contents, lesson_summary=lecture_summary)
+            selected_lesson.chapter_title = section_title
+            selected_lesson.chapter_page_number = int(page_number)
+            selected_lesson.save()
+        except Exception as e:
+            print("Error extracting section title and page number", e)
+            section_title = None
+            page_number = None
     # Prepare the context
     context = {
         'selected_lesson': selected_lesson,
@@ -98,11 +120,13 @@ def lesson_dashboard(request, lesson_slug):
         'lesson_problems': lesson_problems,
         'lecture_summary': lecture_summary,
         'lecture_exists': lecture_exists,
-        'student_exists': student_exists
+        'student_exists': student_exists,
+        'section_title': section_title,
+        'page_number': page_number,
     }
 
     return render(request, 'education/lesson_home.html', context)
-
+@staff_member_required
 @login_required
 def add_lesson_view(request, class_slug):
     class_obj = Class.objects.get(slug=class_slug)
@@ -117,6 +141,7 @@ def add_lesson_view(request, class_slug):
         form = LessonForm()
     return render(request, 'education/add_lesson.html', {'form': form, 'class': class_obj})
 
+@staff_member_required
 @login_required
 def add_transcriptions_view(request, lesson_slug):
     lesson = get_object_or_404(Lesson, slug=lesson_slug)
@@ -209,7 +234,7 @@ def upload_and_transcribe(request):
     except Exception as e:
         return Response({'error': 'Failed to transcribe audio.'}, status=500)
     
-
+@staff_member_required
 @login_required
 def chat(request, class_slug=None, lesson_slug=None):
     # Initialize context with chat sessions
@@ -344,7 +369,7 @@ def chat(request, class_slug=None, lesson_slug=None):
                     response_text = get_gpt_response_with_context(session, enhanced_query)
                 else:
                     enhanced_query = f"The user is messaging you with regards to a university class, this is the name of the class {class_instance.name}.\nPlease answer this user question given that:\n\"{message_text}\""
-                    response_text = generate_chat_completion(class_instance, message_text)
+                    response_text = get_gpt_response_with_context(session, enhanced_query, class_slug=class_slug)
             else:
                 if super_search:
                     pinecone_result = None
