@@ -34,6 +34,9 @@ urlpatterns = [
     path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),
     path('lesson/<slug:lesson_slug>/add-transcriptions/', views.add_transcriptions_view, name='add_transcriptions'),
 
+    path('assignments/', views.assignments_list, name='assignments_list'),
+    path('assignments/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
+
     # path('api/classes/', views.ClassListView.as_view(), name='class-list'),
     # path('api/classes/<int:class_id>/', views.ScheduleDetailView.as_view(), name='schedule-detail'),
     # path('api/lectures/upload/', views.LectureUploadView.as_view(), name='lecture-upload'),

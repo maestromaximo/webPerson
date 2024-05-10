@@ -33,15 +33,22 @@
         
         <!-- Assignments -->
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Assignments</h2>
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200 hover:text-blue-500 cursor-pointer">
+            <a href="{% url 'assignments_list' %}">Assignments</a>
+          </h2>
           <ul>
             {% for assignment in class_assignments %}
-              <li>{{ assignment.description }} - Due: {{ assignment.due_date }}</li>
+              <li>
+                <a href="{% url 'assignment_detail' assignment.id %}" class="hover:text-blue-500">
+                  HW{{ forloop.counter }}: {% if assignment.answer_pdf %}Done{% else %}Incomplete{% endif %} - Due: {{ assignment.due_date|date:"Y-m-d" }}
+                </a>
+              </li>
             {% empty %}
               <li>No assignments found.</li>
             {% endfor %}
           </ul>
         </div>
+
         
         <!-- Tests -->
         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">

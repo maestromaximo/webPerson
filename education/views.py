@@ -126,6 +126,18 @@ def lesson_dashboard(request, lesson_slug):
     }
 
     return render(request, 'education/lesson_home.html', context)
+
+@login_required
+def assignments_list(request):
+    assignments = Assignment.objects.all().order_by('due_date')
+    return render(request, 'education/assigment_list.html', {'assignments': assignments})
+
+@login_required
+def assignment_detail(request, assignment_id):
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    return render(request, 'education/assigment_detail.html', {'assignment': assignment})
+
+
 @staff_member_required
 @login_required
 def add_lesson_view(request, class_slug):

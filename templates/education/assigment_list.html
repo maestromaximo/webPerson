@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
+  <div class="container mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-4xl font-bold">Assignments</h1>
+    </div>
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      <ul>
+        {% for assignment in assignments %}
+        <li class="py-2">
+          <a href="{% url 'assignment_detail' assignment.id %}" class="text-blue-500 hover:text-blue-700">
+            {{ assignment.description|default:"No Description" }} - Due: {{ assignment.due_date|date:"Y-m-d" }}
+          </a>
+        </li>
+        {% empty %}
+        <li>No assignments available.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
