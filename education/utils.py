@@ -21,7 +21,7 @@ from pydub import AudioSegment
 
 
 MODELS = {
-    'gpt-4': 'gpt-4-turbo',
+    'gpt-4': 'gpt-4o',
     'gpt-4-vision': 'gpt-4-vision-preview',
     'gpt-3.5': 'gpt-3.5-turbo',
     'dall-e-3': 'dall-e-3',
@@ -596,7 +596,7 @@ def generate_chat_completionOLD(user_question, use_gpt4=False):
     Returns:
     str: The generated completion message.
     """
-    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
     completion = client.chat.completions.create(
         model=model,
         messages=[
@@ -618,7 +618,7 @@ def generate_chat_completion(user_question, use_gpt4=False):
     Returns:
     str: The generated completion message.
     """
-    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
     try:
         completion = client.chat.completions.create(
             model=model,
@@ -650,7 +650,7 @@ def extract_the_most_likely_title(lesson_summary, book_index, use_gpt4=False):
     Returns:
     str: The generated book index section.
     """
-    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
     completion = client.chat.completions.create(
         model=model,
         response_format={ "type": "json_object" },
@@ -683,7 +683,7 @@ def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, le
     """
     # Select the appropriate model based on the function argument
     from .models import Message
-    model_version = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    model_version = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
 
     # Build the conversation history for context
     messages = session.messages.all()

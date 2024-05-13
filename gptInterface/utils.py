@@ -35,7 +35,7 @@ def generate_chat_completion(user_question, use_gpt4=False):
     Returns:
     str: The generated completion message.
     """
-    model = "gpt-4-turbo" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
     completion = client.chat.completions.create(
         model=model,
         messages=[
