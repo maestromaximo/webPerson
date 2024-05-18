@@ -7,3 +7,5 @@ auxiliaryScripts/
 aiFunctionsPickleAvlbFuncs.pkl
 *.pdf
 *.mp3
+
+upload_helper.py
