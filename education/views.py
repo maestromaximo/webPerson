@@ -244,7 +244,7 @@ def upload_and_transcribe(request):
     except AuthenticationError as e:
         return Response({'error': 'Authentication error.'}, status=401)
     except Exception as e:
-        return Response({'error': 'Failed to transcribe audio.'}, status=500)
+        return Response({'error': f'Failed to transcribe audio. {e}'}, status=500)
     
 @staff_member_required
 @login_required
