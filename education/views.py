@@ -228,10 +228,8 @@ def upload_and_transcribe(request):
 
     try:
         # Transcribe the audio file
-        transcript_response = client.audio.transcriptions.create(
-            file=audio_file, model="whisper-1"
-        )
-        transcription_text = transcript_response['text']
+        
+        transcription_text = transcribe_audio(audio_file)
 
         # Create a Transcript object
         transcript = Transcript.objects.create(
