@@ -244,7 +244,7 @@ class Lesson(models.Model):
                     lecture=lecture_transcript.summarized if 'lecture' in required_transcripts else "",
                     student=student_transcript.summarized if 'student' in required_transcripts else ""
                 )
-                setattr(self, field, generate_chat_completion(prompt))
+                setattr(self, field, generate_chat_completion(prompt, use_gpt4=False))
             
             self.analyzed = True
             self.save()

@@ -606,7 +606,7 @@ def generate_chat_completionOLD(user_question, use_gpt4=False):
     )
     return completion.choices[0].message.content
 
-def generate_chat_completion(user_question, use_gpt4=False):
+def generate_chat_completion(user_question, use_gpt4=True):
     """
     Generates a chat completion using OpenAI's GPT-3.5-turbo or GPT-4 model.
     If the context length exceeds the maximum for GPT-3.5-turbo, it retries with GPT-4.
@@ -669,7 +669,7 @@ def extract_the_most_likely_title(lesson_summary, book_index, use_gpt4=False):
         print(f"Error parsing JSON response: {str(e)}")
         return None
 
-def get_gpt_response_with_context(session, user_question:str, use_gpt4=False, lesson_slug=None, class_slug=None):
+def get_gpt_response_with_context(session, user_question:str, use_gpt4=True, lesson_slug=None, class_slug=None):
     """
     Generates a chat completion using OpenAI's GPT model, including context from previous messages.
 
