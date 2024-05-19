@@ -78,7 +78,11 @@ def class_dashboard(request, class_slug):
 
     return render(request, 'education/class_home.html', context)
 
+from django.views.decorators.clickjacking import xframe_options_sameorigin, xframe_options_exempt
+
+# @xframe_options_sameorigin
 @login_required
+@xframe_options_exempt
 def lesson_dashboard(request, lesson_slug):
     # Retrieve the lesson by slug. If not found, a 404 error will be raised.
     selected_lesson = get_object_or_404(Lesson, slug=lesson_slug)
@@ -485,6 +489,18 @@ def fetch_messages(request, session_id):
     messages = [{'text': msg.text, 'is_user_message': (msg.role == 'user')} for msg in session.messages.all().order_by('timestamp')]
     return JsonResponse({'messages': messages})
 
+
+# from django.http import FileResponse, Http404
+# import os
+
+# def custom_serve(request, path, document_root=None):
+#     full_path = os.path.join(document_root, path)
+#     if not os.path.exists(full_path):
+#         raise Http404("File does not exist")
+
+#     response = FileResponse(open(full_path, 'rb'))
+#     response['X-Frame-Options'] = 'SAMEORIGIN'
+#     return response
     
     
 class ClassViewSet(viewsets.ModelViewSet):

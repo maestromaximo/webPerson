@@ -53,6 +53,13 @@ INSTALLED_APPS = [
     'rest_framework',
 ]
 
+# from django.utils.deprecation import MiddlewareMixin
+
+# class CustomXFrameOptionsMiddleware(MiddlewareMixin):
+#     def process_response(self, request, response):
+#         response['X-Frame-Options'] = 'SAMEORIGIN'
+#         return response
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -60,10 +67,15 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Default middleware
+    # 'webPerson.settings.CustomXFrameOptionsMiddleware',  # Custom middleware
 ]
 
+
+
 ROOT_URLCONF = 'webPerson.urls'
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 TEMPLATES = [
     {
@@ -154,3 +166,4 @@ INTERNAL_IPS = [
 
 EMAIL_HOST_USER = os.getenv("EMAIL_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
