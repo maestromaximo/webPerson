@@ -17,7 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         EMAIL_HOST_USER = settings.EMAIL_HOST_USER
         EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
-        self.stdout.write(f"email: {EMAIL_HOST_USER} password: {EMAIL_HOST_PASSWORD}")
+        # self.stdout.write(f"email: {EMAIL_HOST_USER} password: {EMAIL_HOST_PASSWORD}")
         print(f"Trying to log in with {EMAIL_HOST_USER} and provided password")
 
         mail = imaplib.IMAP4_SSL('imap.gmail.com')
