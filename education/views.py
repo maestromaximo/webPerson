@@ -200,7 +200,7 @@ def upload_and_transcribe(request):
         request (HttpRequest): The HTTP request object.
         audio_file (File): The audio file to be transcribed.
         source (str): The source of the audio file.
-        lesson_slug (str): The slug of the lesson associated with the transcription.
+        lesson_slug (str, optional): The slug of the lesson associated with the transcription.
         class_slug (str, optional): The slug of the class associated with the lesson (optional).
         title (str, optional): The title for a newly created lesson if necessary.
     """
@@ -210,12 +210,12 @@ def upload_and_transcribe(request):
     class_slug = request.data.get('class_slug', None)  # Optional class slug
     title = request.data.get('title', 'New Lesson') # Optional title for a new lesson
 
-    if not audio_file or not source or not lesson_slug:
+    if not audio_file or not source or not (lesson_slug or class_slug):
         return Response({'error': 'Missing required parameters.'}, status=400)
 
     lesson = Lesson.objects.filter(slug=lesson_slug).first()
 
-    if not lesson and class_slug:
+    if not lesson and class_slug and title: ##Need to add AND title to the if statement
         class_instance = Class.objects.filter(slug=class_slug).first()
         if not class_instance:
             return Response({'error': 'Class does not exist.'}, status=400)
