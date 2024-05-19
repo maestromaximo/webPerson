@@ -2,6 +2,7 @@ import imaplib
 import email
 from email.header import decode_header
 import os
+import tempfile
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.utils.text import slugify
@@ -54,7 +55,14 @@ class Command(BaseCommand):
                             if part.get('Content-Disposition') is None:
                                 continue
 
+                            # Decode the filename
                             file_name = part.get_filename()
+                            if file_name:
+                                file_name, encoding = decode_header(file_name)[0]
+                                if isinstance(file_name, bytes):
+                                    file_name = file_name.decode(encoding if encoding else 'utf-8')
+                                
+                            print(f"Detected PDF attachment: {file_name}")
                             if file_name and file_name.lower().endswith('.pdf'):
                                 file_path = os.path.join(settings.MEDIA_ROOT, 'notes', file_name)
                                 with open(file_path, 'wb') as f:
@@ -65,10 +73,25 @@ class Command(BaseCommand):
             # Process each saved PDF
             for pdf_path in pdf_files:
                 pdf_name = os.path.basename(pdf_path)
-                class_slug = pdf_name.split('.')[0]  # Assuming the file name format is class_slug.pdf
+                class_slug = pdf_name.split('.')[0].split()[-1].strip()
+                class_slug = class_slug.replace('–', '-')  # Replace en dash with hyphen
+                print(f"Processing PDF {pdf_name} for class {class_slug}")
+
+                # # Add debug prints to compare the slugs character by character
+                # print(f"Comparing with existing class slugs:")
+                # for cls in Class.objects.all():
+                #     print(f"Class slug from DB: {cls.slug}")
+                #     print(f"Does '{class_slug}' match '{cls.slug}'?")
+                #     if class_slug == cls.slug:
+                #         print(f"Match found: {cls.slug}")
+
                 related_class = Class.objects.filter(slug=class_slug).first()
+
+                # print(f"Found related class: {related_class}")
                 if related_class:
+                    print(f"Found related class {related_class}, inside the if statement")
                     lesson_page_indices = self.get_lesson_page_indices(pdf_path)
+                    print(f"Lesson page indices: {lesson_page_indices}")
                     self.create_notes_from_pdf(pdf_path, related_class, lesson_page_indices)
 
             mail.logout()
@@ -82,12 +105,23 @@ class Command(BaseCommand):
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             pix = page.get_pixmap()
-            image_data = pix.samples  # You can use an image processing library to analyze this image data
-            if self.detect_black_circle(image_data):
+            image_data = pix.tobytes("png")  # Convert pixmap to bytes
+
+            # Save image data to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_img_file:
+                temp_img_file.write(image_data)
+                temp_img_file_path = temp_img_file.name
+
+            if self.detect_black_circle(temp_img_file_path):
+                print(f"Detected black circle on page {page_num}")
                 lesson_page_indices.append(page_num)
+
+            # Remove the temporary file
+            os.remove(temp_img_file_path)
+
         return lesson_page_indices
 
-    def detect_black_circle(image_path, square_size=(100, 100), threshold=0.1):
+    def detect_black_circle(self, image_path, square_size=(73, 45), threshold=0.05, debug=False):
         """
         Detects a black circle in the top left of the page.
 
@@ -95,6 +129,7 @@ class Command(BaseCommand):
         - image_path: Path to the image file.
         - square_size: Tuple indicating the size of the square to check (width, height).
         - threshold: Proportion of black pixels required to consider the circle detected.
+        - debug: Boolean indicating whether to display the processed image.
 
         Returns:
         - Boolean indicating whether the circle is detected.
@@ -123,6 +158,13 @@ class Command(BaseCommand):
         total_pixels = processed_image.size
         proportion_black = black_pixels / total_pixels
 
+        if debug:
+            # Display the processed image
+            cv2.imshow('Processed Image', processed_image)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        print('Proportion of black pixels:', proportion_black)
+
         return proportion_black >= threshold
 
     def create_notes_from_pdf(self, pdf_path, related_class, lesson_page_indices):
@@ -149,4 +191,3 @@ class Command(BaseCommand):
                 note = Notes(name=note_name, file=f'notes/{related_class.slug}_section_{i + 1}.pdf', related_lesson=lesson)
                 note.save()
                 self.stdout.write(self.style.SUCCESS(f"Created Notes object for {section_pdf_path} related to lesson {lesson.title}"))
-
