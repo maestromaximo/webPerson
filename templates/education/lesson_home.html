@@ -97,6 +97,16 @@
             <li>Student: {% if student_exists %} Available {% else %} Not Available {% endif %}</li>
           </ul>
         </div>
+
+        <!-- Notes Section -->
+        {% if notes_exist %}
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200">Notes</h2>
+          {% for note in lesson_notes %}
+          <iframe src="{{ note.file.url }}" class="w-full h-64 mt-4"></iframe>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

@@ -90,6 +90,7 @@ def lesson_dashboard(request, lesson_slug):
     lecture_summary = selected_lesson.get_lecture_summary() if selected_lesson.transcripts.filter(source='Lecture').exists() else "No summary available"
     lecture_exists = selected_lesson.transcripts.filter(source='Lecture').exists()
     student_exists = selected_lesson.transcripts.filter(source='Student').exists()
+    notes_exist = lesson_notes.exists()  # Check if there are any notes
 
     try:
         related_book = selected_lesson.related_class.book if selected_lesson.related_class.book else None
@@ -121,6 +122,7 @@ def lesson_dashboard(request, lesson_slug):
         'lecture_summary': lecture_summary,
         'lecture_exists': lecture_exists,
         'student_exists': student_exists,
+        'notes_exist': notes_exist,  # Add notes_exist to context
         'section_title': section_title,
         'page_number': page_number,
     }
