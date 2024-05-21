@@ -9,3 +9,7 @@ class LessonForm(forms.ModelForm):
 class TranscriptionUploadForm(forms.Form):
     lecture_file = forms.FileField(required=False, label="Upload Lecture Audio")
     student_file = forms.FileField(required=False, label="Upload Student Audio")
+
+
+class UploadPDFForm(forms.Form):
+    pdf = forms.FileField()

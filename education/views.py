@@ -1,5 +1,9 @@
 import datetime
 import json
+import os
+import shutil
+from PyPDF2 import PdfReader
+from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 import requests
 from rest_framework import generics, status, viewsets
@@ -15,12 +19,16 @@ from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer,
                           LessonSerializer, ProblemSerializer, ToolSerializer, 
                           TranscriptSerializer, NotesSerializer, AssignmentSerializer, 
                           ProblemSetSerializer, TestSerializer)
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import FileResponse, JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.contrib.admin.views.decorators import staff_member_required
+
+
+from .forms import UploadPDFForm
+from .utils import extract_pages_as_images, detect_question_number, create_pdf_from_pages
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
@@ -79,6 +87,7 @@ def class_dashboard(request, class_slug):
     return render(request, 'education/class_home.html', context)
 
 from django.views.decorators.clickjacking import xframe_options_sameorigin, xframe_options_exempt
+from django.core.files.storage import FileSystemStorage
 
 # @xframe_options_sameorigin
 @login_required
@@ -490,18 +499,65 @@ def fetch_messages(request, session_id):
     return JsonResponse({'messages': messages})
 
 
-# from django.http import FileResponse, Http404
-# import os
+def process_pdf_view(request):
+    if request.method == 'POST':
+        form = UploadPDFForm(request.POST, request.FILES)
+        if form.is_valid():
+            uploaded_file = request.FILES['pdf']
+            fs = FileSystemStorage()
+            filename = fs.save(uploaded_file.name, uploaded_file)
+            file_path = fs.path(filename)
 
-# def custom_serve(request, path, document_root=None):
-#     full_path = os.path.join(document_root, path)
-#     if not os.path.exists(full_path):
-#         raise Http404("File does not exist")
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-#     response = FileResponse(open(full_path, 'rb'))
-#     response['X-Frame-Options'] = 'SAMEORIGIN'
-#     return response
-    
+            pdf_reader = PdfReader(file_path)
+            images = extract_pages_as_images(file_path)
+
+            last_question_number = 1
+            assignment_number = 1
+            pages = []
+
+            for i, image in enumerate(images):
+                question_number = detect_question_number(image, i, debug=False)
+                if question_number is False:
+                    continue
+
+                if question_number is not None and question_number < last_question_number:
+                    output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                    create_pdf_from_pages(pdf_reader, pages, output_path)
+                    assignment_number += 1
+                    pages = [i]
+                    last_question_number = question_number
+                elif question_number is not None:
+                    output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                    create_pdf_from_pages(pdf_reader, pages, output_path)
+                    pages = [i]
+                    last_question_number = question_number
+                else:
+                    pages.append(i)
+
+            if pages:
+                output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                create_pdf_from_pages(pdf_reader, pages, output_path)
+
+            os.remove(file_path)
+
+            return render(request, 'process_pdf.html', {'form': form, 'processed': True})
+
+    else:
+        form = UploadPDFForm()
+
+    return render(request, 'process_pdf.html', {'form': form, 'processed': False})
+
+def download_processed_files(request):
+    output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
+    shutil.make_archive(output_dir, 'zip', output_dir)
+    zip_file_path = f'{output_dir}.zip'
+
+    response = FileResponse(open(zip_file_path, 'rb'), as_attachment=True, filename='processed_pdfs.zip')
+    return response
     
 class ClassViewSet(viewsets.ModelViewSet):
     queryset = Class.objects.all()

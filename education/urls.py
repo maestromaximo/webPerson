@@ -37,6 +37,9 @@ urlpatterns = [
     path('assignments/', views.assignments_list, name='assignments_list'),
     path('assignments/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
 
+    path('process_pdf/', views.process_pdf_view, name='process_pdf'),
+    path('download_processed_files/', views.download_processed_files, name='download_processed_files'),
+
     # path('api/classes/', views.ClassListView.as_view(), name='class-list'),
     # path('api/classes/<int:class_id>/', views.ScheduleDetailView.as_view(), name='schedule-detail'),
     # path('api/lectures/upload/', views.LectureUploadView.as_view(), name='lecture-upload'),

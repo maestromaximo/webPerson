@@ -18,7 +18,10 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.uploadedfile import UploadedFile
 from io import BytesIO
 from pydub import AudioSegment
-
+import pytesseract
+from pdf2image import convert_from_path
+from PIL import Image, ImageDraw
+from PyPDF2 import PdfReader, PdfWriter
 
 MODELS = {
     'gpt-4': 'gpt-4o',
@@ -836,3 +839,48 @@ def transcribe_audio(audio_file, model="whisper-1"):
 
     else:
         raise ValueError("The file must be an uploaded file object.")
+
+###### Assigment breaker
+
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+
+def extract_pages_as_images(pdf_path):
+    return convert_from_path(pdf_path)
+
+def detect_question_number(image, i, debug=False):
+    left = image.width - 120
+    top = 0
+    right = image.width
+    bottom = 120
+
+    cropped = image.crop((left, top, right, bottom))
+    if debug:
+        draw = ImageDraw.Draw(image)
+        draw.rectangle(((left, top), (right, bottom)), outline="red")
+        image.save(f'debug_{i}.png')
+        cropped.save(f'debug_cropped_{i}.png')
+        
+    recognized_text = pytesseract.image_to_string(cropped, config='--psm 6 --oem 1').strip()
+    print(f"OCR recognized text on page {i}: {recognized_text}")
+
+    match = re.search(r'[1-9]|i|x|X', recognized_text)  # Search for the first digit between 1 and 9 or 'i' or 'x' or 'X'
+    if match:
+        recognized_digit = match.group()
+        if recognized_digit.lower() == 'x':
+            print(f"OCR detected 'x' or 'X' on page {i}, discarding this page.")
+            return False
+        elif recognized_digit == 'i':
+            print(f"OCR recognized 'i' as '1' on page {i}.")
+            return 1
+        else:
+            return int(recognized_digit)
+    else:
+        print(f"OCR didn't find a number between 1 and 9, 'i', 'x' or 'X' on page {i}.")
+        return None
+
+def create_pdf_from_pages(pdf_reader, pages, output_path):
+    pdf_writer = PdfWriter()
+    for page in pages:
+        pdf_writer.add_page(pdf_reader.pages[page])
+    with open(output_path, "wb") as output_pdf:
+        pdf_writer.write(output_pdf)
