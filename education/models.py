@@ -338,6 +338,15 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f"{self.related_class.name} assignment due {self.due_date}"
+    
+class AssigmentQuestion(models.Model):
+    section = models.CharField(max_length=10, null=True, blank=True, help_text="This is like Q1, Q2, etc.") 
+    question = models.TextField(null=True, blank=True, help_text="An optional entry for the question, it is simply the question itself.")
+    answer = models.FileField(upload_to='assignments/answers/sectioned/', null=True, blank=True, help_text="An entry for the answer to the question in pdf form.")
+    related_assignment = models.ForeignKey(Assignment, related_name='questions', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.section if self.section else "Unnamed Question for Assignment"
 
 class ProblemSet(models.Model):
     related_lessons = models.ManyToManyField(Lesson)
