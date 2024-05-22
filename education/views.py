@@ -499,6 +499,7 @@ def fetch_messages(request, session_id):
     return JsonResponse({'messages': messages})
 
 
+
 def process_pdf_view(request):
     if request.method == 'POST':
         form = UploadPDFForm(request.POST, request.FILES)
@@ -516,11 +517,15 @@ def process_pdf_view(request):
             images = extract_pages_as_images(file_path)
 
             last_question_number = None
-            assignment_number = 1
             pages = []
 
             for i, image in enumerate(images):
                 question_number = detect_question_number(image, i, debug=True)
+
+                # If the first page has a number other than 'x' or 'X', assume it's question 1
+                if i == 0 and question_number not in (None, False):
+                    question_number = 1
+
                 if question_number is False:
                     continue
 
@@ -528,7 +533,6 @@ def process_pdf_view(request):
                     if pages:
                         output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
                         create_pdf_from_pages(pdf_reader, pages, output_path)
-                    assignment_number += 1
                     pages = [i]
                 elif question_number is not None:
                     if pages and last_question_number is not None:
