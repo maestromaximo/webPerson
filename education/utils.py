@@ -905,7 +905,7 @@ def cleanup_processed_files(output_dir):
                 os.remove(file_path)
 
         # Remove the directory itself
-        os.rmdir(output_dir)
+        # os.rmdir(output_dir)
 
         print(f"Successfully cleaned up the processed files in {output_dir}")
 
