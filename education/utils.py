@@ -892,3 +892,22 @@ def create_pdf_from_pages(pdf_reader, pages, output_path):
             print(f"Successfully created PDF: {output_path}")
         except Exception as e:
             print(f"Error writing PDF {output_path}: {e}")
+
+def cleanup_processed_files(output_dir):
+    try:
+        # Remove the zip file
+        os.remove(f'{output_dir}.zip')
+
+        # Remove all processed PDF files
+        for file_name in os.listdir(output_dir):
+            file_path = os.path.join(output_dir, file_name)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+        # Remove the directory itself
+        os.rmdir(output_dir)
+
+        print(f"Successfully cleaned up the processed files in {output_dir}")
+
+    except Exception as e:
+        print(f"Error cleaning up the processed files: {e}")

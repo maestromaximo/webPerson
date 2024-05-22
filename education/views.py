@@ -28,7 +28,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 
 from .forms import UploadPDFForm
-from .utils import detect_question_marker, extract_pages_as_images, create_pdf_from_pages
+from .utils import cleanup_processed_files, detect_question_marker, extract_pages_as_images, create_pdf_from_pages
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
@@ -543,10 +543,14 @@ def process_pdf_view(request):
 
 def download_processed_files(request):
     output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
-    shutil.make_archive(output_dir, 'zip', output_dir)
     zip_file_path = f'{output_dir}.zip'
 
+    shutil.make_archive(output_dir, 'zip', output_dir)
+
     response = FileResponse(open(zip_file_path, 'rb'), as_attachment=True, filename='processed_pdfs.zip')
+
+    cleanup_processed_files(output_dir)
+
     return response
     
 class ClassViewSet(viewsets.ModelViewSet):
