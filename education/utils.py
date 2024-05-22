@@ -879,11 +879,15 @@ def detect_question_number(image, i, debug=False):
         return None
 
 def create_pdf_from_pages(pdf_reader, pages, output_path):
+    if not pages:
+        print(f"No pages to create PDF for {output_path}")
+        return
+    
     pdf_writer = PdfWriter()
     print(f"Creating PDF: {output_path} with pages: {pages}")
     for page_num in pages:
         try:
-            page = pdf_reader.pages[page_num]  # Corrected way to access pages
+            page = pdf_reader.pages[page_num]
             pdf_writer.add_page(page)
             print(f"Added page {page_num} to {output_path}")
         except Exception as e:

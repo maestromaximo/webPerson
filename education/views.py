@@ -515,30 +515,34 @@ def process_pdf_view(request):
             pdf_reader = PdfReader(file_path)
             images = extract_pages_as_images(file_path)
 
-            last_question_number = 1
+            last_question_number = None
             assignment_number = 1
             pages = []
 
             for i, image in enumerate(images):
                 question_number = detect_question_number(image, i, debug=True)
+                if i == 0 and question_number not in [1, False, None]:
+                    question_number = 1
+                    print(f"First page question number corrected to 1")
+
                 if question_number is False:
                     continue
 
-                if question_number is not None and question_number < last_question_number:
+                if question_number is not None and last_question_number is not None and question_number < last_question_number:
                     if pages:
                         output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
                         create_pdf_from_pages(pdf_reader, pages, output_path)
                     assignment_number += 1
                     pages = [i]
-                    last_question_number = question_number
                 elif question_number is not None:
-                    if pages:
+                    if pages and last_question_number is not None:
                         output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
                         create_pdf_from_pages(pdf_reader, pages, output_path)
                     pages = [i]
-                    last_question_number = question_number
                 else:
                     pages.append(i)
+
+                last_question_number = question_number if question_number is not False else last_question_number
 
             if pages:
                 output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
