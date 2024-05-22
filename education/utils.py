@@ -882,8 +882,8 @@ def create_pdf_from_pages(pdf_reader, pages, output_path):
     pdf_writer = PdfWriter()
     for page_num in pages:
         try:
-            page = pdf_reader.getPage(page_num)
-            pdf_writer.addPage(page)
+            page = pdf_reader.pages[page_num]  # Corrected way to access pages
+            pdf_writer.add_page(page)
         except Exception as e:
             print(f"Error adding page {page_num}: {e}")
     with open(output_path, "wb") as output_pdf:
