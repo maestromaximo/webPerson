@@ -863,7 +863,7 @@ def detect_question_number(image, i, debug=False):
     recognized_text = pytesseract.image_to_string(cropped, config='--psm 6 --oem 1').strip()
     print(f"OCR recognized text on page {i}: {recognized_text}")
 
-    match = re.search(r'[1-9]|i|x|X', recognized_text)  # Search for the first digit between 1 and 9 or 'i' or 'x' or 'X'
+    match = re.search(r'[1-9]|i|x|X', recognized_text)
     if match:
         recognized_digit = match.group()
         if recognized_digit.lower() == 'x':
@@ -880,7 +880,8 @@ def detect_question_number(image, i, debug=False):
 
 def create_pdf_from_pages(pdf_reader, pages, output_path):
     pdf_writer = PdfWriter()
-    for page in pages:
-        pdf_writer.add_page(pdf_reader.pages[page])
+    for page_num in pages:
+        page = pdf_reader.getPage(page_num)
+        pdf_writer.addPage(page)
     with open(output_path, "wb") as output_pdf:
         pdf_writer.write(output_pdf)

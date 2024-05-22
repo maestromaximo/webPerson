@@ -503,11 +503,13 @@ def process_pdf_view(request):
     if request.method == 'POST':
         form = UploadPDFForm(request.POST, request.FILES)
         if form.is_valid():
+            # Save the uploaded PDF
             uploaded_file = request.FILES['pdf']
             fs = FileSystemStorage()
             filename = fs.save(uploaded_file.name, uploaded_file)
             file_path = fs.path(filename)
 
+            # Process the PDF
             output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
@@ -544,12 +546,12 @@ def process_pdf_view(request):
 
             os.remove(file_path)
 
-            return render(request, 'education/process_pdf.html', {'form': form, 'processed': True})
+            return render(request, 'process_pdf.html', {'form': form, 'processed': True})
 
     else:
         form = UploadPDFForm()
 
-    return render(request, 'education/process_pdf.html', {'form': form, 'processed': False})
+    return render(request, 'process_pdf.html', {'form': form, 'processed': False})
 
 def download_processed_files(request):
     output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
