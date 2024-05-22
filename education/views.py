@@ -516,49 +516,30 @@ def process_pdf_view(request):
             pdf_reader = PdfReader(file_path)
             images = extract_pages_as_images(file_path)
 
-            last_question_number = None
+            question_number = 1
             pages = []
-
             for i, image in enumerate(images):
-                question_number = detect_question_number(image, i, debug=True)
-
-                # If the first page has a number other than 'x' or 'X', assume it's question 1
-                if i == 0:
-                    if question_number is not False:
-                        question_number = 1
-                    else:
-                        question_number = None
-
-                if question_number is False:
-                    continue
-
-                if question_number is not None and last_question_number is not None and question_number < last_question_number:
+                if detect_question_marker(image, i):
                     if pages:
-                        output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                        output_path = os.path.join(output_dir, f'Q{question_number}.pdf')
                         create_pdf_from_pages(pdf_reader, pages, output_path)
-                    pages = [i]
-                elif question_number is not None:
-                    if pages and last_question_number is not None:
-                        output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
-                        create_pdf_from_pages(pdf_reader, pages, output_path)
+                        question_number += 1
                     pages = [i]
                 else:
                     pages.append(i)
 
-                last_question_number = question_number if question_number is not False else last_question_number
-
             if pages:
-                output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                output_path = os.path.join(output_dir, f'Q{question_number}.pdf')
                 create_pdf_from_pages(pdf_reader, pages, output_path)
 
             os.remove(file_path)
 
-            return render(request, 'education/process_pdf.html', {'form': form, 'processed': True})
+            return render(request, 'process_pdf.html', {'form': form, 'processed': True})
 
     else:
         form = UploadPDFForm()
 
-    return render(request, 'education/process_pdf.html', {'form': form, 'processed': False})
+    return render(request, 'process_pdf.html', {'form': form, 'processed': False})
 
 def download_processed_files(request):
     output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')

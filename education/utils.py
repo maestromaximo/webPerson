@@ -847,7 +847,7 @@ pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 def extract_pages_as_images(pdf_path):
     return convert_from_path(pdf_path)
 
-def detect_question_number(image, i, debug=False):
+def detect_question_marker(image, i, debug=False):
     left = image.width - 120
     top = 0
     right = image.width
@@ -863,20 +863,14 @@ def detect_question_number(image, i, debug=False):
     recognized_text = pytesseract.image_to_string(cropped, config='--psm 6 --oem 1').strip()
     print(f"OCR recognized text on page {i}: {recognized_text}")
 
-    match = re.search(r'[1-9]|i|x|X', recognized_text)
-    if match:
-        recognized_digit = match.group()
-        if recognized_digit.lower() == 'x':
-            print(f"OCR detected 'x' or 'X' on page {i}, discarding this page.")
-            return False
-        elif recognized_digit == 'i':
-            print(f"OCR recognized 'i' as '1' on page {i}.")
-            return 1
-        else:
-            return int(recognized_digit)
+    # Assume it's a question marker if it's not 'x' or 'X'
+    if recognized_text.lower() == 'x':
+        print(f"OCR detected 'x' or 'X' on page {i}, discarding this page.")
+        return False
+    elif recognized_text:
+        return True
     else:
-        print(f"OCR didn't find a number between 1 and 9, 'i', 'x' or 'X' on page {i}.")
-        return None
+        return False
 
 def create_pdf_from_pages(pdf_reader, pages, output_path):
     if not pages:
