@@ -521,10 +521,6 @@ def process_pdf_view(request):
 
             for i, image in enumerate(images):
                 question_number = detect_question_number(image, i, debug=True)
-                if i == 0 and question_number not in [1, False, None]:
-                    question_number = 1
-                    print(f"First page question number corrected to 1")
-
                 if question_number is False:
                     continue
 
