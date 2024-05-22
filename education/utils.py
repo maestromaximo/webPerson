@@ -881,7 +881,14 @@ def detect_question_number(image, i, debug=False):
 def create_pdf_from_pages(pdf_reader, pages, output_path):
     pdf_writer = PdfWriter()
     for page_num in pages:
-        page = pdf_reader.getPage(page_num)
-        pdf_writer.addPage(page)
+        try:
+            page = pdf_reader.getPage(page_num)
+            pdf_writer.addPage(page)
+        except Exception as e:
+            print(f"Error adding page {page_num}: {e}")
     with open(output_path, "wb") as output_pdf:
-        pdf_writer.write(output_pdf)
+        try:
+            pdf_writer.write(output_pdf)
+            print(f"Successfully created PDF: {output_path}")
+        except Exception as e:
+            print(f"Error writing PDF {output_path}: {e}")
