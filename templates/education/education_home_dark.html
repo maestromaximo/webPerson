@@ -28,7 +28,7 @@
             <div class="p-4">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-200">Upcoming Class</h3>
               {% if upcoming_class %}
-                <p class="text-gray-600 dark:text-gray-400">{{ upcoming_class.name }} - {{ upcoming_class.subject }}</p>
+                <a href="{% url 'class_dashboard' class_slug=upcoming_class.slug %}" class="text-gray-600 dark:text-gray-400">{{ upcoming_class.name }} - {{ upcoming_class.subject }}</a>
               {% else %}
                 <p class="text-gray-600 dark:text-gray-400">No upcoming classes</p>
               {% endif %}
@@ -60,6 +60,13 @@
               {% else %}
                 <p class="text-gray-600 dark:text-gray-400">No lessons reviewed yet</p>
               {% endif %}
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+            <div class="p-4">
+              <a href="#" class="text-lg font-semibold hover:text-blue-400 text-gray-900 dark:text-gray-200">Study sets</a>
+              <p class="text-gray-600 dark:text-gray-400">Here we can display the study sets created for tests in LaTeX</p>
             </div>
           </div>
         </div>
