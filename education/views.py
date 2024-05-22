@@ -523,8 +523,11 @@ def process_pdf_view(request):
                 question_number = detect_question_number(image, i, debug=True)
 
                 # If the first page has a number other than 'x' or 'X', assume it's question 1
-                if i == 0 and question_number not in (None, False):
-                    question_number = 1
+                if i == 0:
+                    if question_number is not False:
+                        question_number = 1
+                    else:
+                        question_number = None
 
                 if question_number is False:
                     continue
