@@ -551,7 +551,7 @@ def process_pdf_view(request):
     else:
         form = UploadPDFForm()
 
-    return render(request, 'eduaction/process_pdf.html', {'form': form, 'processed': False})
+    return render(request, 'education/process_pdf.html', {'form': form, 'processed': False})
 
 def download_processed_files(request):
     output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
