@@ -525,14 +525,16 @@ def process_pdf_view(request):
                     continue
 
                 if question_number is not None and question_number < last_question_number:
-                    output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
-                    create_pdf_from_pages(pdf_reader, pages, output_path)
+                    if pages:
+                        output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                        create_pdf_from_pages(pdf_reader, pages, output_path)
                     assignment_number += 1
                     pages = [i]
                     last_question_number = question_number
                 elif question_number is not None:
-                    output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
-                    create_pdf_from_pages(pdf_reader, pages, output_path)
+                    if pages:
+                        output_path = os.path.join(output_dir, f'Q{last_question_number}.pdf')
+                        create_pdf_from_pages(pdf_reader, pages, output_path)
                     pages = [i]
                     last_question_number = question_number
                 else:
@@ -549,7 +551,7 @@ def process_pdf_view(request):
     else:
         form = UploadPDFForm()
 
-    return render(request, 'education/process_pdf.html', {'form': form, 'processed': False})
+    return render(request, 'eduaction/process_pdf.html', {'form': form, 'processed': False})
 
 def download_processed_files(request):
     output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs')
