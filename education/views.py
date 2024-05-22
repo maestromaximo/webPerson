@@ -28,7 +28,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 
 from .forms import UploadPDFForm
-from .utils import detect_question_marker, extract_pages_as_images, detect_question_number, create_pdf_from_pages
+from .utils import detect_question_marker, extract_pages_as_images, create_pdf_from_pages
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
