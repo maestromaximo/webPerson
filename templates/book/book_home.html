@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+    <div class="flex flex-col items-center justify-center h-screen">
+        <h1 class="text-4xl font-bold mb-8">Book Dashboard</h1>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded shadow">
+                <h2 class="text-xl font-bold mb-4">Books Created</h2>
+                <!-- Add your code here to display the books created -->
+            </div>
+
+            <div class="bg-white p-4 rounded shadow">
+                <h2 class="text-xl font-bold mb-4">Create a New Book</h2>
+                <a href="#" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                    Create Book
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 mt-8 rounded shadow">
+            <h2 class="text-xl font-bold mb-4">Stories in Progress</h2>
+            <!-- Add your code here to display the stories in progress -->
+        </div>
+
+        <div class="bg-white p-4 mt-8 rounded shadow">
+            <h2 class="text-xl font-bold mb-4">Stories Completed</h2>
+            <!-- Add your code here to display the stories completed -->
+    </div>
+{% endblock %}
