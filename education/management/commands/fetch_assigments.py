@@ -202,7 +202,7 @@ class Command(BaseCommand):
             if detect_question_marker(image, i):
                 if pages:
                     output_path = os.path.join(output_dir, f'Q{question_number}.pdf')
-                    create_pdf_from_pages(pdf_reader, pages, output_path)
+                    self.create_pdf_from_pages(pdf_reader, pages, output_path)
                     self.create_assignment_question(output_path, assignment, question_number)
                     question_number += 1
                 pages = [i]
@@ -211,8 +211,29 @@ class Command(BaseCommand):
 
         if pages:
             output_path = os.path.join(output_dir, f'Q{question_number}.pdf')
-            create_pdf_from_pages(pdf_reader, pages, output_path)
+            self.create_pdf_from_pages(pdf_reader, pages, output_path)
             self.create_assignment_question(output_path, assignment, question_number)
+
+    def create_pdf_from_pages(self, pdf_reader, pages, output_path):
+        if not pages:
+            print(f"No pages to create PDF for {output_path}")
+            return
+        
+        pdf_writer = fitz.open()  # Corrected initialization
+        print(f"Creating PDF: {output_path} with pages: {pages}")
+        for page_num in pages:
+            try:
+                page = pdf_reader.load_page(page_num)  # Corrected way to access pages
+                pdf_writer.insert_pdf(pdf_reader, from_page=page_num, to_page=page_num)
+                print(f"Added page {page_num} to {output_path}")
+            except Exception as e:
+                print(f"Error adding page {page_num}: {e}")
+        with open(output_path, "wb") as output_pdf:
+            try:
+                pdf_writer.save(output_pdf)
+                print(f"Successfully created PDF: {output_path}")
+            except Exception as e:
+                print(f"Error writing PDF {output_path}: {e}")
 
     def create_assignment_question(self, pdf_path, assignment, question_number):
         random_suffix = str(random.randint(10000000, 99999999))
