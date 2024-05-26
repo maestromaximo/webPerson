@@ -233,14 +233,14 @@ class Command(BaseCommand):
 
     def create_assignment_question(self, pdf_path, assignment, question_number):
         random_suffix = str(random.randint(10000000, 99999999))
-        new_pdf_path = os.path.join('assignments', 'answers', 'sectioned' f'Q{question_number}_{random_suffix}.pdf')
-        os.rename(pdf_path, os.path.join(settings.MEDIA_ROOT, new_pdf_path))
-        section_name = os.path.basename(new_pdf_path).replace('.pdf', '')
+        final_pdf_path = os.path.join('assignments/answers/sectioned', f'Q{question_number}_{random_suffix}.pdf')
+        os.rename(pdf_path, os.path.join(settings.MEDIA_ROOT, final_pdf_path))
+        section_name = os.path.basename(final_pdf_path).replace('.pdf', '')
 
         question = AssigmentQuestion(
             section=section_name,
-            answer=new_pdf_path,
+            answer=final_pdf_path,
             related_assignment=assignment
         )
         question.save()
-        self.stdout.write(self.style.SUCCESS(f"Created AssigmentQuestion for {new_pdf_path} related to assignment {assignment.description}"))
+        self.stdout.write(self.style.SUCCESS(f"Created AssigmentQuestion for {final_pdf_path} related to assignment {assignment.description}"))
