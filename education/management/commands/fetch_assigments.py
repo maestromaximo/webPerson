@@ -66,7 +66,7 @@ class Command(BaseCommand):
                                     self.stdout.write(self.style.SUCCESS(f"Saved attachment {file_name}"))
                                     pdf_files.append(file_path)
 
-                            mail.store(num, '+FLAGS', '\\Seen') ##Need to add else statement to mark as unseen
+                            mail.store(num, '+FLAGS', '\\Seen')
                         else:
                             self.stdout.write(self.style.WARNING(f"Ignoring email with subject: {email_subject}"))
                             mail.store(num, '-FLAGS', '(\Seen)')
@@ -76,10 +76,15 @@ class Command(BaseCommand):
                 class_slug = pdf_name.split('.')[0].split()[-1].strip()
                 class_slug = class_slug.replace('–', '-')  # Replace en dash with hyphen
 
+                self.stdout.write(self.style.SUCCESS(f"Processing PDF {pdf_name} for class slug {class_slug}"))
+
                 related_class = Class.objects.filter(slug=class_slug).first()
                 if related_class:
+                    self.stdout.write(self.style.SUCCESS(f"Found related class: {related_class}"))
                     lesson_page_indices = self.get_lesson_page_indices(pdf_path)
                     self.assign_pdfs_to_assignments(pdf_path, related_class, lesson_page_indices)
+                else:
+                    self.stdout.write(self.style.WARNING(f"No related class found for slug: {class_slug}"))
 
             mail.logout()
         except imaplib.IMAP4.error as e:
@@ -102,6 +107,7 @@ class Command(BaseCommand):
 
             os.remove(temp_img_file_path)
 
+        self.stdout.write(self.style.SUCCESS(f"Detected lesson page indices: {lesson_page_indices}"))
         return lesson_page_indices
 
     def detect_black_circle(self, image_path, square_size=(73, 45), threshold=0.05, debug=False):
@@ -148,6 +154,9 @@ class Command(BaseCommand):
 
             pdf_sections.append(section_pdf_path)
 
+        self.stdout.write(self.style.SUCCESS(f"Assignments found: {assignments.count()}"))
+        self.stdout.write(self.style.SUCCESS(f"PDF sections created: {len(pdf_sections)}"))
+
         for assignment in assignments:
             if not assignment.answer_pdf:
                 section_pdf_path = pdf_sections.pop(0) if pdf_sections else None
@@ -162,7 +171,6 @@ class Command(BaseCommand):
                     if not assignment.questions.exists():
                         self.stdout.write(self.style.WARNING(f"No related questions for assignment {assignment.description}"))
                         self.break_down_pdf_and_create_questions(new_section_pdf_path, assignment)
-
             else:
                 self.stdout.write(self.style.SUCCESS(f"Skipping assignment {assignment.description} because it already has an answer PDF."))
 
