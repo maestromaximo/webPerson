@@ -66,7 +66,10 @@ class Command(BaseCommand):
                                     self.stdout.write(self.style.SUCCESS(f"Saved attachment {file_name}"))
                                     pdf_files.append(file_path)
 
-                            mail.store(num, '+FLAGS', '\\Seen')
+                            mail.store(num, '+FLAGS', '\\Seen') ##Need to add else statement to mark as unseen
+                        else:
+                            self.stdout.write(self.style.WARNING(f"Ignoring email with subject: {email_subject}"))
+                            mail.store(num, '-FLAGS', '(\Seen)')
 
             for pdf_path in pdf_files:
                 pdf_name = os.path.basename(pdf_path)
