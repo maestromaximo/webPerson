@@ -173,15 +173,15 @@ class Command(BaseCommand):
                 section_pdf_path = pdf_sections.pop(0) if pdf_sections else None
                 if section_pdf_path:
                     random_suffix = str(random.randint(10000000, 99999999))
-                    new_section_pdf_path = os.path.join(settings.MEDIA_ROOT, 'assignments', f'{related_class.slug}_section_{i + 1}_{random_suffix}.pdf')
-                    os.rename(section_pdf_path, new_section_pdf_path)
+                    new_section_pdf_path = os.path.join('assignments', f'{related_class.slug}_section_{i + 1}_{random_suffix}.pdf')
+                    os.rename(section_pdf_path, os.path.join(settings.MEDIA_ROOT, new_section_pdf_path))
                     assignment.answer_pdf = new_section_pdf_path
                     assignment.save()
                     self.stdout.write(self.style.SUCCESS(f"Assigned {new_section_pdf_path} to assignment {assignment.description}"))
 
                     if not assignment.questions.exists():
                         self.stdout.write(self.style.WARNING(f"No related questions for assignment {assignment.description}"))
-                        self.break_down_pdf_and_create_questions(new_section_pdf_path, assignment)
+                        self.break_down_pdf_and_create_questions(os.path.join(settings.MEDIA_ROOT, new_section_pdf_path), assignment)
             else:
                 self.stdout.write(self.style.SUCCESS(f"Skipping assignment {assignment.description} because it already has an answer PDF."))
 
@@ -233,8 +233,8 @@ class Command(BaseCommand):
 
     def create_assignment_question(self, pdf_path, assignment, question_number):
         random_suffix = str(random.randint(10000000, 99999999))
-        new_pdf_path = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs', f'Q{question_number}_{random_suffix}.pdf')
-        os.rename(pdf_path, new_pdf_path)
+        new_pdf_path = os.path.join('processed_pdfs', f'Q{question_number}_{random_suffix}.pdf')
+        os.rename(pdf_path, os.path.join(settings.MEDIA_ROOT, new_pdf_path))
         section_name = os.path.basename(new_pdf_path).replace('.pdf', '')
 
         question = AssigmentQuestion(
