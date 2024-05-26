@@ -173,7 +173,7 @@ class Command(BaseCommand):
                 section_pdf_path = pdf_sections.pop(0) if pdf_sections else None
                 if section_pdf_path:
                     random_suffix = str(random.randint(10000000, 99999999))
-                    new_section_pdf_path = section_pdf_path.replace('.pdf', f'_{random_suffix}.pdf')
+                    new_section_pdf_path = os.path.join(settings.MEDIA_ROOT, 'assignments', f'{related_class.slug}_section_{i + 1}_{random_suffix}.pdf')
                     os.rename(section_pdf_path, new_section_pdf_path)
                     assignment.answer_pdf = new_section_pdf_path
                     assignment.save()
@@ -228,18 +228,14 @@ class Command(BaseCommand):
                 print(f"Added page {page_num} to {output_path}")
             except Exception as e:
                 print(f"Error adding page {page_num}: {e}")
-        with open(output_path, "wb") as output_pdf:
-            try:
-                pdf_writer.save(output_pdf)
-                print(f"Successfully created PDF: {output_path}")
-            except Exception as e:
-                print(f"Error writing PDF {output_path}: {e}")
+        pdf_writer.save(output_path)
+        print(f"Successfully created PDF: {output_path}")
 
     def create_assignment_question(self, pdf_path, assignment, question_number):
         random_suffix = str(random.randint(10000000, 99999999))
-        new_pdf_path = pdf_path.replace('.pdf', f'_{random_suffix}.pdf')
+        new_pdf_path = os.path.join(settings.MEDIA_ROOT, 'processed_pdfs', f'Q{question_number}_{random_suffix}.pdf')
         os.rename(pdf_path, new_pdf_path)
-        section_name = os.path.basename(pdf_path).replace('.pdf', '')
+        section_name = os.path.basename(new_pdf_path).replace('.pdf', '')
 
         question = AssigmentQuestion(
             section=section_name,
