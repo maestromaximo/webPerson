@@ -233,7 +233,11 @@ class Command(BaseCommand):
 
     def create_assignment_question(self, pdf_path, assignment, question_number):
         random_suffix = str(random.randint(10000000, 99999999))
-        final_pdf_path = os.path.join('assignments/answers/sectioned', f'Q{question_number}_{random_suffix}.pdf')
+        final_pdf_path = os.path.join('assignments', 'answers', 'sectioned', f'Q{question_number}_{random_suffix}.pdf')
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(os.path.join(settings.MEDIA_ROOT, final_pdf_path)), exist_ok=True)
+        
         os.rename(pdf_path, os.path.join(settings.MEDIA_ROOT, final_pdf_path))
         section_name = os.path.basename(final_pdf_path).replace('.pdf', '')
 
