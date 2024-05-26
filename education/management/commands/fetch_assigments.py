@@ -13,6 +13,14 @@ import cv2
 import numpy as np
 from education.utils import extract_pages_as_images, detect_question_marker, create_pdf_from_pages, cleanup_processed_files
 
+CLASS_SLUGS = {
+    'STAT333': 'stochastic-processes-333',
+    'STAT231': 'statistics-231',
+    'PHYS363': 'mechanics-363',
+    'PHYS342': 'em2-342',
+    'AMATH351': 'ordinary-differential-equations-351'
+}
+
 class Command(BaseCommand):
     help = 'Checks Gmail for unread emails with PDF attachments and processes them for assignments.'
 
@@ -73,18 +81,21 @@ class Command(BaseCommand):
 
             for pdf_path in pdf_files:
                 pdf_name = os.path.basename(pdf_path)
-                class_slug = pdf_name.split('.')[0].split()[-1].strip()
-                class_slug = class_slug.replace('–', '-')  # Replace en dash with hyphen
+                class_code = pdf_name.split()[0]
+                class_slug = CLASS_SLUGS.get(class_code, None)
 
-                self.stdout.write(self.style.SUCCESS(f"Processing PDF {pdf_name} for class slug {class_slug}"))
+                self.stdout.write(self.style.SUCCESS(f"Processing PDF {pdf_name} for class code {class_code} with slug {class_slug}"))
 
-                related_class = Class.objects.filter(slug=class_slug).first()
-                if related_class:
-                    self.stdout.write(self.style.SUCCESS(f"Found related class: {related_class}"))
-                    lesson_page_indices = self.get_lesson_page_indices(pdf_path)
-                    self.assign_pdfs_to_assignments(pdf_path, related_class, lesson_page_indices)
+                if class_slug:
+                    related_class = Class.objects.filter(slug=class_slug).first()
+                    if related_class:
+                        self.stdout.write(self.style.SUCCESS(f"Found related class: {related_class}"))
+                        lesson_page_indices = self.get_lesson_page_indices(pdf_path)
+                        self.assign_pdfs_to_assignments(pdf_path, related_class, lesson_page_indices)
+                    else:
+                        self.stdout.write(self.style.WARNING(f"No related class found for slug: {class_slug}"))
                 else:
-                    self.stdout.write(self.style.WARNING(f"No related class found for slug: {class_slug}"))
+                    self.stdout.write(self.style.WARNING(f"No slug mapping found for class code: {class_code}"))
 
             mail.logout()
         except imaplib.IMAP4.error as e:
