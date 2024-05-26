@@ -5,14 +5,19 @@
   <div class="container mx-auto p-6">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-4xl font-bold">{{ assignment.related_class.name }} - Assignment Detail</h1>
+      {% if request.user.is_superuser %}
+      {% if assignment.answer_pdf %}
+      <a href="{% url 'download_related_questions' assignment.id %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Download Related Questions</a>
+      {% endif %}
+      {% endif %}
     </div>
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6">
       <p><strong>Due Date:</strong> {{ assignment.due_date|date:"Y-m-d H:i" }}</p>
       <p>{{ assignment.description|default:"No description provided." }}</p>
-      <p><a href="{{ assignment.pdf.url }}">Download Assignment</a></p>
-      {% if request.user.is_staff or request.user.is_superuser %}
+      <p><a href="{{ assignment.pdf.url }}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Download Assignment</a></p>
+      {% if request.user.is_superuser %}
       {% if assignment.answer_pdf %}
-      <p><a href="{{ assignment.answer_pdf.url }}">Download Answer Key</a></p>
+      <p><a href="{{ assignment.answer_pdf.url }}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Download Answer Key</a></p>
       {% endif %}
       {% endif %}
     </div>

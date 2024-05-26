@@ -19,7 +19,7 @@ from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer,
                           LessonSerializer, ProblemSerializer, ToolSerializer, 
                           TranscriptSerializer, NotesSerializer, AssignmentSerializer, 
                           ProblemSetSerializer, TestSerializer)
-from django.http import FileResponse, JsonResponse, HttpResponseBadRequest
+from django.http import FileResponse, Http404, JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -151,6 +151,34 @@ def assignments_list(request):
 def assignment_detail(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
     return render(request, 'education/assigment_detail.html', {'assignment': assignment})
+
+@login_required
+def download_related_questions(request, assignment_id):
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    questions = assignment.questions.all()
+    
+    if not questions.exists():
+        raise Http404("No related questions found for this assignment.")
+    
+    output_dir = os.path.join(settings.MEDIA_ROOT, 'temp_questions')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    for question in questions:
+        question_pdf_path = os.path.join(settings.MEDIA_ROOT, question.answer.name)
+        if os.path.exists(question_pdf_path):
+            shutil.copy(question_pdf_path, output_dir)
+    
+    zip_file_path = os.path.join(settings.MEDIA_ROOT, 'temp_questions.zip')
+    shutil.make_archive(output_dir, 'zip', output_dir)
+
+    response = FileResponse(open(zip_file_path, 'rb'), as_attachment=True, filename=f'{assignment.related_class.name}_related_questions.zip')
+    
+    # Cleanup
+    shutil.rmtree(output_dir)
+    os.remove(zip_file_path)
+    
+    return response
 
 
 @staff_member_required
