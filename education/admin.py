@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Class, LessonEmbedding, Prompt, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession
+from .models import Class, LessonEmbedding, Prompt, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession, AssigmentQuestion
 # GPTInstance
 class ScheduleInline(admin.TabularInline):
     model = Schedule
@@ -152,3 +152,8 @@ class LessonEmbeddingAdmin(admin.ModelAdmin):
     list_filter = ('lesson',)
     search_fields = ('lesson__title',)
 
+@admin.register(AssigmentQuestion)
+class AssigmentQuestionAdmin(admin.ModelAdmin):
+    list_display = ('section', 'related_assignment')
+    list_filter = ('related_assignment', 'section')
+    search_fields = ('question', 'section')
