@@ -49,6 +49,12 @@ class Command(BaseCommand):
                         email_from = decode_header(msg.get("From"))[0][0]
                         self.stdout.write(self.style.SUCCESS(f"Processing email from {email_from} with subject {email_subject}"))
 
+                        if "assignment" in email_subject.lower():
+                            self.stdout.write(self.style.WARNING(f"Ignoring email with subject: {email_subject}"))
+                            # Mark email as unseen again
+                            mail.store(num, '-FLAGS', '(\Seen)')
+                            continue
+
                         for part in msg.walk():
                             if part.get_content_maintype() == 'multipart':
                                 continue
