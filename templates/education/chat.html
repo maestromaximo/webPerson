@@ -17,8 +17,6 @@
   </aside>
 
   <!-- Chat Main Area -->
-
-
   <main class="flex flex-1 flex-col">
     <div class="pl-4 text-white text-4xl font-bold">
         {% if current_class and not current_lesson %}
@@ -27,7 +25,8 @@
         <div>Chatting about lesson: {{ current_lesson.title }} ({{ current_lesson.related_class.name }})</div>
         {% else %}
         <div>General Chat</div>
-        {% endif %}</div>
+        {% endif %}
+    </div>
     <div class="flex flex-1 flex-col overflow-hidden p-6">
       <div id="chat" class="mb-4 flex-1 overflow-y-auto rounded-lg bg-[#202020] p-4">
         <!-- Chat messages will be dynamically added here -->
@@ -39,7 +38,6 @@
             <label for="superSearchToggle" class="text-white">Super Search</label>
             <button id="sendMessage" class="rounded-r-lg bg-blue-500 px-4 text-white hover:bg-blue-600">Send</button>
         </div>
-
     </div>
   </main>
 </div>
@@ -48,7 +46,7 @@
     // Declare variables to hold slug values
     var currentClassSlug = "{{ current_class.slug|default:'' }}";
     var currentLessonSlug = "{{ current_lesson.slug|default:'' }}";
-  </script>
+</script>
 <script>
     var currentSessionId = null; // Start with no active session
 
@@ -65,10 +63,11 @@ function loadSession(sessionId) {
         data.messages.forEach(msg => {
             const messageDiv = document.createElement('div');
             messageDiv.className = msg.is_user_message ? 'bg-blue-500 text-white p-2 my-2 rounded-lg max-w-xs ml-auto' : 'bg-gray-700 text-white p-2 my-2 rounded-lg max-w-xs';
-            messageDiv.textContent = msg.text;
+            messageDiv.innerHTML = applyMarkdownStyles(msg.text);
             chatWindow.appendChild(messageDiv);
         });
         chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to the bottom of the chat window
+        MathJax.typeset(); // Re-render MathJax
     })
     .catch(error => console.error('Error:', error));
 }
@@ -109,7 +108,7 @@ document.getElementById('sendMessage').addEventListener('click', function() {
         userLabel.className = 'font-bold text-blue-500';
         userLabel.textContent = 'User:';
         const userContent = document.createElement('div');
-        userContent.textContent = message;
+        userContent.innerHTML = applyMarkdownStyles(message);
         userMessageDiv.appendChild(userLabel);
         userMessageDiv.appendChild(userContent);
         chatWindow.appendChild(userMessageDiv);
@@ -126,7 +125,7 @@ document.getElementById('sendMessage').addEventListener('click', function() {
             assistantLabel.className = 'font-bold text-green-500';
             assistantLabel.textContent = 'Assistant:';
             const assistantContent = document.createElement('div');
-            assistantContent.textContent = data.response;
+            assistantContent.innerHTML = applyMarkdownStyles(data.response);
             assistantMessageDiv.appendChild(assistantLabel);
             assistantMessageDiv.appendChild(assistantContent);
             chatWindow.appendChild(assistantMessageDiv);
@@ -149,6 +148,7 @@ document.getElementById('sendMessage').addEventListener('click', function() {
         chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to the bottom
         messageInput.value = ''; // Clear the input
         superSearchToggle.checked = false; // Reset the toggle
+        MathJax.typeset(); // Re-render MathJax
     })
     .catch(error => console.error('Error:', error));
 });
@@ -169,8 +169,26 @@ document.getElementById('messageInput').addEventListener('keydown', function(eve
     }
 });
 
+// Function to apply markdown styles and MathJax delimiters
+function applyMarkdownStyles(text) {
+    text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    text = text.replace(/(\d+\.\s)/g, "\n$1");
+    text = text.replace(/(\s-\s)/g, "\n$1");
+    text = text.replace(/\\\((.*?)\\\)/g, "<span class='math-inline'>\\($1\\)</span>");
+    text = text.replace(/\\\[(.*?)\\\]/g, "<div class='math-display'>\\[$1\\]</div>");
+    return text;
+}
+</script>
 
+<!-- MathJax -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-  </script>
-  
+<style>
+  .math-display {
+      text-align: center;
+      margin: 20px 0;
+  }
+</style>
+
 {% endblock %}
