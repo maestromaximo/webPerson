@@ -266,6 +266,16 @@ class Lesson(models.Model):
             self.embed()
         super().save(*args, **kwargs)
 
+class Concept(models.Model):
+    related_class = models.ForeignKey(Class, related_name='concepts', on_delete=models.CASCADE, null=True, blank=True)
+    related_lesson = models.ForeignKey(Lesson, related_name='concepts', on_delete=models.CASCADE, null=True, blank=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    notes = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
 class Problem(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField()
