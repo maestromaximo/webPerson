@@ -23,6 +23,8 @@ from pdf2image import convert_from_path
 from PIL import Image, ImageDraw
 from PyPDF2 import PdfReader, PdfWriter
 
+from education.models import Concept
+
 MODELS = {
     'gpt-4': 'gpt-4o',
     'gpt-4-vision': 'gpt-4-vision-preview',
@@ -640,6 +642,68 @@ def generate_chat_completion(user_question, use_gpt4=True):
                 raise ValueError("Error: The provided context is too long, even for GPT-4.")
         else:
             raise e
+        
+#Provided a lesson it checks to see if it has a lesson transcript, if not summarized it summarizes it
+#then it grabs the summary of the lesson and uses that string to extract, and create concepts from the lesson
+#For the creation of the concepts, it extracts them using the GPT-4 model
+#It does this by asking the generate_chat_completion function things like what formulas were mentioned in the lesson
+#and then it uses the response to create the concepts
+#it also asks things like "where there any physical principles or definitions mentioned in the lesson" and uses the response to create concepts
+def create_concepts_from_lesson(lesson, use_gpt4=True):
+    """
+    Create concepts from a lesson by summarizing it and extracting key information using GPT-4.
+
+    Args:
+    lesson (Lesson): The lesson object to process.
+    """
+    # Check if the lesson has a transcript; if not, summarize it
+    lecture_transcript = lesson.transcripts.filter(source='Lecture').first()
+    if not lecture_transcript:
+        return 0  # Return 0 if no transcript is available
+    if not lecture_transcript.summarized:
+        print(f"Summarizing the lecture transcript for Lesson {lesson.title}...")
+        lecture_transcript.summarize()
+
+    # Extract the lesson summary and create concepts using GPT-4
+    lesson_summary = lecture_transcript.summary
+    # concepts = []
+    # Extract formulas mentioned in the lesson
+    # formulas_response = generate_chat_completion(f"Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas: {lesson_summary}", use_gpt4=True)
+    
+    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    completion = client.chat.completions.create(
+        model=model,
+        response_format={ "type": "json_object" },
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant designed to always output JSON."},
+            {"role": "user", "content": "Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas for example you would return \{\"formulas\":[formula1,formula2,etc]\}:\n"+f"Here is the lesson summary: {lesson_summary}"},
+        ]
+    )
+    response = completion.choices[0].message.content
+    values = []
+    try:
+        json_response = json.loads(response)
+        ##return the title and page number and we return independent of the keys they two values from the expected dictionary output, but we return none if there are not exactly two values
+        values = list(json_response.values())
+    except Exception as e:
+        print(f"Error parsing JSON response: {str(e)}")
+        return 0
+    
+    if len(values) >= 1:
+        formulas = values[0]
+        for formula in formulas:
+            #Now we create the concepts directly
+            concept = Concept.objects.create(lesson=lesson, name=formula, title="Formula", description=formula, related_lesson=lesson, related_class=lesson.related_class)
+            concept.save()
+
+    # Extract physical principles or definitions mentioned in the lesson
+    
+    
+    return 1
+        
+
+
+
         
 def extract_the_most_likely_title(lesson_summary, book_index, use_gpt4=False):
     """
