@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from education.forms import LessonForm, TranscriptionUploadForm
 from education.utils import extract_the_most_likely_title, generate_chat_completion, get_gpt_response_with_context, query_pinecone, transcribe_audio
 # import openai
-from .models import ChatSession, Class, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
+from .models import ChatSession, Class, Concept, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
 from rest_framework.decorators import api_view
 from django.db.models import Count
 from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer, 
@@ -90,16 +90,15 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin, xfra
 from django.core.files.storage import FileSystemStorage
 
 # @xframe_options_sameorigin
-@login_required
-@xframe_options_exempt
 def lesson_dashboard(request, lesson_slug):
     # Retrieve the lesson by slug. If not found, a 404 error will be raised.
     selected_lesson = get_object_or_404(Lesson, slug=lesson_slug)
 
-    # Fetch transcripts, notes, problems, and tools related to the lesson
+    # Fetch transcripts, notes, problems, tools, and concepts related to the lesson
     lesson_transcripts = Transcript.objects.filter(related_lesson=selected_lesson)
     lesson_notes = Notes.objects.filter(related_lesson=selected_lesson)
     lesson_problems = Problem.objects.filter(related_lessons=selected_lesson).prefetch_related('tools')
+    lesson_concepts = Concept.objects.filter(related_lesson=selected_lesson)
     lecture_summary = selected_lesson.get_lecture_summary() if selected_lesson.transcripts.filter(source='Lecture').exists() else "No summary available"
     lecture_exists = selected_lesson.transcripts.filter(source='Lecture').exists()
     student_exists = selected_lesson.transcripts.filter(source='Student').exists()
@@ -126,12 +125,14 @@ def lesson_dashboard(request, lesson_slug):
             print("Error extracting section title and page number", e)
             section_title = None
             page_number = None
+
     # Prepare the context
     context = {
         'selected_lesson': selected_lesson,
         'lesson_transcripts': lesson_transcripts,
         'lesson_notes': lesson_notes,
         'lesson_problems': lesson_problems,
+        'lesson_concepts': lesson_concepts,  # Add concepts to context
         'lecture_summary': lecture_summary,
         'lecture_exists': lecture_exists,
         'student_exists': student_exists,
@@ -142,6 +143,16 @@ def lesson_dashboard(request, lesson_slug):
 
     return render(request, 'education/lesson_home.html', context)
 
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_concept(request, concept_id):
+    try:
+        concept = Concept.objects.get(id=concept_id)
+        concept.delete()
+        return JsonResponse({'success': True})
+    except Concept.DoesNotExist:
+        return JsonResponse({'success': False}, status=404)
+    
 @login_required
 def assignments_list(request):
     assignments = Assignment.objects.all().order_by('due_date')

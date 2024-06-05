@@ -34,6 +34,8 @@ urlpatterns = [
     path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),
     path('lesson/<slug:lesson_slug>/add-transcriptions/', views.add_transcriptions_view, name='add_transcriptions'),
 
+    path('delete_concept/<int:concept_id>/', views.delete_concept, name='delete_concept'),
+
     path('assignments/', views.assignments_list, name='assignments_list'),
     path('assignments/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
     path('assignment/<int:assignment_id>/download/', views.download_related_questions, name='download_related_questions'),

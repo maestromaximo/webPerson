@@ -23,7 +23,7 @@ from pdf2image import convert_from_path
 from PIL import Image, ImageDraw
 from PyPDF2 import PdfReader, PdfWriter
 
-from education.models import Concept
+
 
 MODELS = {
     'gpt-4': 'gpt-4o',
@@ -665,7 +665,7 @@ def create_concepts_from_lesson(lesson, use_gpt4=True):
         lecture_transcript.summarize()
 
     # Extract the lesson summary and create concepts using GPT-4
-    lesson_summary = lecture_transcript.summary
+    lesson_summary = lecture_transcript.summarized
     # concepts = []
     # Extract formulas mentioned in the lesson
     # formulas_response = generate_chat_completion(f"Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas: {lesson_summary}", use_gpt4=True)
@@ -689,15 +689,38 @@ def create_concepts_from_lesson(lesson, use_gpt4=True):
         print(f"Error parsing JSON response: {str(e)}")
         return 0
     
+    from education.models import Concept
     if len(values) >= 1:
         formulas = values[0]
         for formula in formulas:
             #Now we create the concepts directly
-            concept = Concept.objects.create(lesson=lesson, name=formula, title="Formula", description=formula, related_lesson=lesson, related_class=lesson.related_class)
+            concept = Concept.objects.create(title="Formula", description=formula, related_lesson=lesson, related_class=lesson.related_class)
             concept.save()
 
     # Extract physical principles or definitions mentioned in the lesson
+    # Extract physical principles or definitions mentioned in the lesson
+    principles_completion = client.chat.completions.create(
+        model=model,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant designed to always output JSON."},
+            {"role": "user", "content": f"Please list any physical principles or definitions mentioned in this lesson, providing a JSON response with a single list of these principles and definitions:\nHere is the lesson summary: {lesson_summary}"},
+        ]
+    )
+    principles_response = principles_completion.choices[0].message.content
+    values2=[]
+    try:
+        principles_json = json.loads(principles_response)
+        values2 = list(principles_json.values())
+    except Exception as e:
+        print(f"Error parsing JSON response for principles: {str(e)}")
+        return 0
     
+    if len(values2) >= 1:
+        principles = values2[0]
+        for principle in principles:
+            #Now we create the concepts directly
+            Concept.objects.create(title="Principle/Definition", description=principle, related_lesson=lesson, related_class=lesson.related_class)
     
     return 1
         

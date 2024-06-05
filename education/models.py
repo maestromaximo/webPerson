@@ -267,11 +267,24 @@ class Lesson(models.Model):
         super().save(*args, **kwargs)
 
 class Concept(models.Model):
+    """
+    Represents a concept.
+
+    Attributes:
+        related_class (ForeignKey): The related class for this concept.
+        related_lesson (ForeignKey): The related lesson for this concept.
+        title (CharField): The title of the concept.
+        description (TextField): The description of the concept.
+        notes (TextField, optional): Additional notes for the concept.
+        approved (BooleanField): Indicates if the concept is approved or not.
+    """
+
     related_class = models.ForeignKey(Class, related_name='concepts', on_delete=models.CASCADE, null=True, blank=True)
     related_lesson = models.ForeignKey(Lesson, related_name='concepts', on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=255)
     description = models.TextField()
     notes = models.TextField(null=True, blank=True)
+    approved = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
