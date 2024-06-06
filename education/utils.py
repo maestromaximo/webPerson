@@ -643,6 +643,26 @@ def generate_chat_completion(user_question, use_gpt4=True):
         else:
             raise e
         
+
+def interact_with_gpt(text, prompt, use_gpt4=False):
+    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    completion = client.chat.completions.create(
+        model=model,
+        response_format={ "type": "json_object" },
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant designed to always output JSON."},
+            {"role": "user", "content": f"{prompt}\n\n{text}"},
+        ]
+    )
+    response = completion.choices[0].message.content
+    return response
+
+def calculate_cosine_distance(embedding1, embedding2):
+    # Ensure embeddings are numpy arrays
+    embedding1 = np.array(embedding1).reshape(1, -1)
+    embedding2 = np.array(embedding2).reshape(1, -1)
+    return 1 - cosine_similarity(embedding1, embedding2)[0][0]
+        
 #Provided a lesson it checks to see if it has a lesson transcript, if not summarized it summarizes it
 #then it grabs the summary of the lesson and uses that string to extract, and create concepts from the lesson
 #For the creation of the concepts, it extracts them using the GPT-4 model

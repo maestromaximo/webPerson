@@ -28,7 +28,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 
 from .forms import UploadPDFForm
-from .utils import cleanup_processed_files, detect_question_marker, extract_pages_as_images, create_pdf_from_pages
+from .utils import calculate_cosine_distance, cleanup_processed_files, cosine_similarity, detect_question_marker, extract_pages_as_images, create_pdf_from_pages, extract_text_from_pdf, generate_embedding, interact_with_gpt
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
@@ -591,6 +591,49 @@ def download_processed_files(request):
     cleanup_processed_files(output_dir)
 
     return response
+
+@require_http_methods(["GET"])
+def process_assignment(request, assignment_id):
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    file_path = assignment.pdf.path
+    text = extract_text_from_pdf(file_path)
+    
+    # Interact with GPT-4 to get the number of questions
+    num_questions_response = interact_with_gpt(text, "Please return a JSON that looks like {'number_q': 'number of questions'} where you state the number of main questions on this assignment, only count the main numbers...")
+    num_questions = json.loads(num_questions_response).get('number_q', 0)
+
+    questions = []
+    for i in range(1, num_questions + 1):
+        question_response = interact_with_gpt(text, f"There are a total of {num_questions} questions on this assignment, please extract into a JSON only and in full question #{i} (question number).")
+        question_text = json.loads(question_response).get('question', '')
+        questions.append({'number': i, 'text': question_text, 'concepts': []})
+
+    # Get all concepts and their embeddings
+    all_concepts = Concept.objects.all()
+    for concept in all_concepts:
+        if not concept.embedding:
+            concept.embed()
+
+    # Calculate cosine similarity for each question
+    for question in questions:
+        question_embedding = generate_embedding(question['text'])
+        concept_similarities = []
+        for concept in all_concepts:
+            similarity = cosine_similarity(question_embedding, concept.embedding)
+            concept_similarities.append((concept.description, similarity))
+        concept_similarities.sort(key=lambda x: x[1], reverse=True)
+        question['concepts'] = [concept[0] for concept in concept_similarities[:5]]
+
+    return JsonResponse({'questions': questions})
+
+
+
+
+
+
+
+
+
     
 class ClassViewSet(viewsets.ModelViewSet):
     queryset = Class.objects.all()

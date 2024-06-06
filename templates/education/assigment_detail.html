@@ -6,6 +6,7 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-4xl font-bold">{{ assignment.related_class.name }} - Assignment Detail</h1>
       {% if request.user.is_superuser %}
+      <button id="processButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Process Assignment</button>
       {% if assignment.answer_pdf %}
       <a href="{% url 'download_related_questions' assignment.id %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Download Related Questions</a>
       {% endif %}
@@ -21,6 +22,64 @@
       {% endif %}
       {% endif %}
     </div>
+
+    <!-- Loader -->
+    <div id="loader" class="loader"></div>
+
+    <!-- Results Section -->
+    <div id="results" class="hidden">
+      <h2 class="text-2xl font-bold mb-4">Questions and Related Concepts</h2>
+      <div id="questionsContainer"></div>
+    </div>
   </div>
 </div>
+
+<style>
+  .loader {
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #3498db;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+    display: none;
+    margin: 0 auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+<script>
+  document.getElementById('processButton').addEventListener('click', function() {
+    document.getElementById('loader').style.display = 'block';
+    fetch("{% url 'process_assignment' assignment.id %}", {
+      method: 'GET',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('results').classList.remove('hidden');
+      const questionsContainer = document.getElementById('questionsContainer');
+      questionsContainer.innerHTML = ''; // Clear previous results
+      data.questions.forEach(q => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'bg-gray-200 dark:bg-gray-700 rounded p-2 mb-4';
+        // questionDiv.innerHTML = `<h3>Question ${q.number}</h3><p>${q.text}</p><h4>Top 5 Related Concepts:</h4><ul>${q.concepts.map(concept => `<li>${concept}</li>`).join('')}</ul>`;
+        questionDiv.innerHTML = `<h3>Question ${q.number}</h3><h4>Top 5 Related Concepts:</h4><ul>${q.concepts.map(concept => `<li>${concept}</li>`).join('')}</ul>`;
+        questionsContainer.appendChild(questionDiv);
+      });
+      MathJax.typeset(); // Re-render MathJax
+    })
+    .catch(error => {
+      document.getElementById('loader').style.display = 'none';
+      console.error('Error:', error);
+    });
+  });
+</script>
 {% endblock %}
