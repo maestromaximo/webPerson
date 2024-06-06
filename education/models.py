@@ -9,6 +9,7 @@ import pdfplumber
 from tqdm import tqdm
 from .utils import extract_toc_text, extract_toc_until_page, find_first_toc_page, parse_toc, upload_book_to_index,generate_chat_completion, generate_embedding, cosine_similarity
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 
 # Enum choices for later use
@@ -286,8 +287,24 @@ class Concept(models.Model):
     notes = models.TextField(null=True, blank=True)
     approved = models.BooleanField(default=False)
 
+    embedding = models.JSONField(null=True, blank=True)
+
+    def embed(self, force_update=False):
+        """Generates the embedding for the concept"""
+        if (self.description and not self.embedding) or (self.description and force_update):
+            try:
+                self.embedding = generate_embedding(self.description)
+            except Exception as e:
+                raise ValidationError(f"Error generating embedding: {str(e)}")
+
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        # Call embed to generate or update embedding before saving
+        if not self.embedding:
+            self.embed()
+        super().save(*args, **kwargs)
 
 class Problem(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
