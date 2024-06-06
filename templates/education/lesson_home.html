@@ -161,6 +161,25 @@
       margin: 20px 0;
   }
 </style>
+
+<script>
+  function deleteConcept(conceptId) {
+    if (confirm('Are you sure you want to delete this concept?')) {
+      fetch(`../../delete_concept/${conceptId}/`, {
+        method: 'DELETE',
+        
+      })
+      .then(response => {
+        if (response.ok) {
+          location.reload();
+        } else {
+          alert('Error deleting concept.');
+        }
+      });
+    }
+  }
+</script>
+
 <script>
   function applyMarkdownStyles(text) {
     // Replace Markdown-like bold syntax **text** with HTML <strong> tags
