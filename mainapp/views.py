@@ -158,81 +158,56 @@ def classification_menu(request):
 def dashboard(request):
     """
     Renders the dashboard page with various statistics and data.
-
-    Args:
-        request: The HTTP request object.
-
-    Returns:
-        A rendered HTML template with the dashboard data.
-
-    Raises:
-        None.
     """
-    # General stats
-    # total_deposits = FieldEntry.objects.filter(type='deposit').aggregate(total=Sum('money'))['total'] or 0
-    
-    # Weekly stats
     today = datetime.today().date()
-
-    # If you only need the date part
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
-    
-    
-    total_budget = 0
-    total_withdrawals = FieldEntry.objects.filter(type='withdrawal', date__range = [start_of_week, end_of_week]).aggregate(total=Sum('money'))['total'] or 0
-    
-    
-    
-    weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
-    # Weekly stats
-    weekly_expenses = float(weekly_entries.aggregate(total=Sum('money'))['total'] or 0)  # Convert to float
 
-    # Trends
+    total_budget = 0
+    total_withdrawals = FieldEntry.objects.filter(type='withdrawal', date__range=[start_of_week, end_of_week]).aggregate(total=Sum('money'))['total'] or 0
+
+    weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
+    weekly_expenses = float(weekly_entries.aggregate(total=Sum('money'))['total'] or 0)
+
     last_week_expenses = float(FieldEntry.objects.filter(
         date__range=[start_of_week - timedelta(days=7), start_of_week - timedelta(days=1)]
-    ).aggregate(total=Sum('money'))['total'] or 0)  # Convert to float
+    ).aggregate(total=Sum('money'))['total'] or 0)
 
     weekly_trend = ((weekly_expenses - last_week_expenses) / last_week_expenses * 100) if last_week_expenses else 0
 
-    # Budget stats
-    # Note: Ensure that your Budget model logic to reset weekly limits is properly implemented
-    budget = Budget.objects.first()  # Assuming one main budget
+    budget = Budget.objects.first()
     categories = budget.categories.all() if budget else []
 
     for cat in categories:
         total_budget += float(cat.weekly_limit)
     current_balance = total_budget - float(total_withdrawals)
-    # Prepare data for graph
-    # Here you can prepare data for a JavaScript chart library like Chart.js
-    # Prepare data for graph
+    
+    adjusted_balance = current_balance + last_week_expenses if current_balance < 0 else current_balance
+
     graph_data = {
         'labels': [cat.name for cat in categories],
-        'data': [float(cat.amount_spent) for cat in categories],  # Convert to float
-        'limits': [float(cat.weekly_limit) for cat in categories],  # Convert to float
+        'data': [float(cat.amount_spent) for cat in categories],
+        'limits': [float(cat.weekly_limit) for cat in categories],
     }
 
-
-    # At a glance info, such as largest expense, most common category, etc.
-    # You would need to write custom queries for these, this is just an example
     largest_expense = weekly_entries.order_by('-money').first()
     most_common_category = weekly_entries.values('category').annotate(total=Count('category')).order_by('-total').first()
     least_common_category = weekly_entries.values('category').annotate(total=Count('category')).order_by('total').first()
-    
+
     context = {
-        'total_deposits': float(total_budget), ##total deposits will be called the same but in reality is total budget left now, refactor later
+        'total_deposits': float(total_budget),
         'total_withdrawals': float(total_withdrawals),
-        'current_balance': round(float(current_balance),2),
+        'current_balance': round(float(current_balance), 2),
         'weekly_expenses': weekly_expenses,
-        'weekly_trend': round(float(weekly_trend),2),
+        'weekly_trend': round(float(weekly_trend), 2),
         'graph_data': graph_data,
         'budget_categories': categories,
         'largest_expense': largest_expense,
         'most_common_category': most_common_category,
         'least_common_category': least_common_category,
+        'adjusted_balance': round(float(adjusted_balance), 2),
     }
 
-    # Subscription logic
     three_months_ago = datetime.now() - timedelta(days=90)
     entries = FieldEntry.objects.filter(
         date__gte=three_months_ago,
@@ -250,13 +225,13 @@ def dashboard(request):
 
     total_subscription_amount = sum(sub['amount'] for sub in subscriptions)
 
-    # Add subscriptions to context
     context.update({
         'subscriptions': subscriptions,
         'total_subscription_amount': total_subscription_amount,
     })
     
     return render(request, 'dashboard.html', context)
+
 
 @staff_member_required
 @login_required
