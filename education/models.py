@@ -403,36 +403,71 @@ class Test(models.Model):
     def __str__(self):
         return f"{self.related_class.name} Test on {self.date}"
 
+# class Prompt(models.Model):
+#     title = models.CharField(max_length=255)
+#     prompt = models.TextField()
+#     description = models.TextField(blank=True, null=True)
+#     category = models.CharField(max_length=100, choices=PROMPT_CHOICES, default='Other')
+#     active = models.BooleanField(default=True)
+
+#     def __str__(self):
+#         return self.title
+
+#     def format_prompt(self, *args, **kwargs):
+#         """
+#         Formats the prompt string with the provided arguments using Python's str.format() method.
+#         This allows for dynamic insertion of values into the prompt template.
+
+#         :param args: Positional arguments for placeholders.
+#         :param kwargs: Keyword arguments for named placeholders.
+#         :return: A formatted prompt string.
+#         """
+#         return self.prompt.format(*args, **kwargs)
+
+#     @classmethod
+#     def filter_by_category(cls, category):
+#         """
+#         Filters prompts by category.
+
+#         :param category: The category to filter by.
+#         :return: QuerySet of prompts that match the category.
+#         """
+#         return cls.objects.filter(category=category, active=True)
+
+
+class Template(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    slug = models.SlugField(unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
 class Prompt(models.Model):
+    template = models.ForeignKey(Template, related_name='prompts', on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()
+    prompt_text = models.TextField()
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.template.name} - {self.order}"
+
+class StudySheet(models.Model):
+    class_belongs = models.ForeignKey(Class, related_name='study_sheets', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    prompt = models.TextField()
-    description = models.TextField(blank=True, null=True)
-    category = models.CharField(max_length=100, choices=PROMPT_CHOICES, default='Other')
-    active = models.BooleanField(default=True)
+    content = models.TextField()
+    raw_latex = models.TextField(null=True, blank=True)
+    pdf = models.FileField(upload_to=f'study_sheets/{class_belongs.slug}/', null=True, blank=True)
 
     def __str__(self):
         return self.title
-
-    def format_prompt(self, *args, **kwargs):
-        """
-        Formats the prompt string with the provided arguments using Python's str.format() method.
-        This allows for dynamic insertion of values into the prompt template.
-
-        :param args: Positional arguments for placeholders.
-        :param kwargs: Keyword arguments for named placeholders.
-        :return: A formatted prompt string.
-        """
-        return self.prompt.format(*args, **kwargs)
-
-    @classmethod
-    def filter_by_category(cls, category):
-        """
-        Filters prompts by category.
-
-        :param category: The category to filter by.
-        :return: QuerySet of prompts that match the category.
-        """
-        return cls.objects.filter(category=category, active=True)
     
 # class GPTInstance(models.Model):
 #     model_name = models.CharField(max_length=70)

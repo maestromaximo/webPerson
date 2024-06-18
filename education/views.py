@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from education.forms import LessonForm, TranscriptionUploadForm
 from education.utils import extract_the_most_likely_title, generate_chat_completion, get_gpt_response_with_context, query_pinecone, transcribe_audio
 # import openai
-from .models import ChatSession, Class, Concept, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
+from .models import ChatSession, Class, Concept, Schedule, Book, Lesson, Problem, StudySheet, Template, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message
 from rest_framework.decorators import api_view
 from django.db.models import Count
 from .serializers import (ClassSerializer, ScheduleSerializer, BookSerializer, 
@@ -27,7 +27,7 @@ from django.urls import reverse
 from django.contrib.admin.views.decorators import staff_member_required
 
 
-from .forms import UploadPDFForm
+from .forms import TemplateSelectionForm, UploadPDFForm
 from .utils import calculate_cosine_distance, cleanup_processed_files, cosine_similarity, detect_question_marker, extract_pages_as_images, create_pdf_from_pages, extract_text_from_pdf, generate_embedding, interact_with_gpt
 # Create your views here.
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
@@ -625,6 +625,45 @@ def process_assignment(request, assignment_id):
         question['concepts'] = [concept[0] for concept in concept_similarities[:5]]
 
     return JsonResponse({'questions': questions})
+
+
+
+@staff_member_required
+def study_guide_dashboard(request, class_slug):
+    selected_class = get_object_or_404(Class, slug=class_slug)
+    if request.method == 'POST':
+        form = TemplateSelectionForm(request.POST)
+        if form.is_valid():
+            template = form.cleaned_data['template']
+            lessons = form.cleaned_data['lessons']
+            assignments = form.cleaned_data['assignments']
+            return redirect('generate_study_guide', class_slug=class_slug, template_id=template.id, lesson_ids=",".join([str(lesson.id) for lesson in lessons]), assignment_ids=",".join([str(assignment.id) for assignment in assignments]))
+    else:
+        form = TemplateSelectionForm()
+    return render(request, 'education/study_guide_dashboard.html', {'form': form, 'selected_class': selected_class})
+
+@staff_member_required
+def generate_study_guide(request, class_slug, template_id, lesson_ids, assignment_ids):
+    selected_class = get_object_or_404(Class, slug=class_slug)
+    template = get_object_or_404(Template, id=template_id)
+    lessons = Lesson.objects.filter(id__in=lesson_ids.split(','))
+    assignments = Assignment.objects.filter(id__in=assignment_ids.split(','))
+
+    # Process the prompts
+    study_sheet_content = ""
+    for prompt in template.prompts.all():
+        context = {
+            'lessons': [lesson.get_lecture_summary() for lesson in lessons],
+            'assignments': [assignment.description for assignment in assignments],
+        }
+        filled_prompt = prompt.prompt_text.format(**context)
+        response = generate_chat_completion(filled_prompt, use_gpt4=True)
+        study_sheet_content += f"\n{response}\n"
+
+    # Save the generated study sheet
+    study_sheet = StudySheet.objects.create(class_belongs=selected_class, title=f"Study Guide for {selected_class.name}", content=study_sheet_content)
+
+    return render(request, 'education/study_guide_result.html', {'study_sheet': study_sheet, 'selected_class': selected_class})
 
 
 

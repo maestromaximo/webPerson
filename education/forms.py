@@ -13,3 +13,12 @@ class TranscriptionUploadForm(forms.Form):
 
 class UploadPDFForm(forms.Form):
     pdf = forms.FileField()
+
+
+from .models import Template, Lesson, Assignment
+
+class TemplateSelectionForm(forms.Form):
+    template = forms.ModelChoiceField(queryset=Template.objects.all(), label="Select Template")
+    lessons = forms.ModelMultipleChoiceField(queryset=Lesson.objects.all(), widget=forms.CheckboxSelectMultiple, label="Select Lessons")
+    assignments = forms.ModelMultipleChoiceField(queryset=Assignment.objects.all(), widget=forms.CheckboxSelectMultiple, label="Select Assignments")
+
