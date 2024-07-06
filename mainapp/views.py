@@ -156,24 +156,24 @@ def classification_menu(request):
 @staff_member_required
 @login_required
 def dashboard(request):
-    """
-    Renders the dashboard page with various statistics and data.
-    """
     today = datetime.today().date()
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
 
     total_budget = 0
-    total_withdrawals = FieldEntry.objects.filter(type='withdrawal', date__range=[start_of_week, end_of_week]).aggregate(total=Sum('money'))['total'] or 0
+    total_withdrawals = FieldEntry.objects.filter(
+        type='withdrawal', date__range=[start_of_week, end_of_week]
+    ).aggregate(total=Sum('money'))['total'] or 0
 
     weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
     weekly_expenses = float(weekly_entries.aggregate(total=Sum('money'))['total'] or 0)
 
+    # Calculate last week's expenses and balance
+    last_week_start = start_of_week - timedelta(days=7)
+    last_week_end = start_of_week - timedelta(days=1)
     last_week_expenses = float(FieldEntry.objects.filter(
-        date__range=[start_of_week - timedelta(days=7), start_of_week - timedelta(days=1)]
+        date__range=[last_week_start, last_week_end]
     ).aggregate(total=Sum('money'))['total'] or 0)
-
-    weekly_trend = ((weekly_expenses - last_week_expenses) / last_week_expenses * 100) if last_week_expenses else 0
 
     budget = Budget.objects.first()
     categories = budget.categories.all() if budget else []
@@ -182,7 +182,13 @@ def dashboard(request):
         total_budget += float(cat.weekly_limit)
     current_balance = total_budget - float(total_withdrawals)
     
-    adjusted_balance = current_balance + last_week_expenses if current_balance < 0 else current_balance
+    # Calculate last week's balance
+    last_week_balance = total_budget - last_week_expenses
+
+    # Adjust current balance if last week's balance was negative
+    adjusted_balance = current_balance
+    if last_week_balance < 0:
+        adjusted_balance += last_week_balance
 
     graph_data = {
         'labels': [cat.name for cat in categories],
@@ -199,7 +205,7 @@ def dashboard(request):
         'total_withdrawals': float(total_withdrawals),
         'current_balance': round(float(current_balance), 2),
         'weekly_expenses': weekly_expenses,
-        'weekly_trend': round(float(weekly_trend), 2),
+        'weekly_trend': round(float(((weekly_expenses - last_week_expenses) / last_week_expenses * 100) if last_week_expenses else 0), 2),
         'graph_data': graph_data,
         'budget_categories': categories,
         'largest_expense': largest_expense,
