@@ -449,9 +449,9 @@ class Template(models.Model):
         return self.name
 
 class Prompt(models.Model):
-    template = models.ForeignKey(Template, related_name='prompts', on_delete=models.CASCADE)
-    order = models.PositiveIntegerField()
-    prompt_text = models.TextField()
+    template = models.ForeignKey(Template, related_name='prompts', on_delete=models.CASCADE, null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)  # Provide a default value here
+    prompt_text = models.TextField(null=True, blank=True)
 
     class Meta:
         ordering = ['order']
@@ -459,12 +459,13 @@ class Prompt(models.Model):
     def __str__(self):
         return f"{self.template.name} - {self.order}"
 
+
 class StudySheet(models.Model):
     class_belongs = models.ForeignKey(Class, related_name='study_sheets', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     content = models.TextField()
     raw_latex = models.TextField(null=True, blank=True)
-    pdf = models.FileField(upload_to=f'study_sheets/{class_belongs.slug}/', null=True, blank=True)
+    pdf = models.FileField(upload_to=f'study_sheets/', null=True, blank=True)
 
     def __str__(self):
         return self.title

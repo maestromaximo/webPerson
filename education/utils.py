@@ -1018,3 +1018,20 @@ def cleanup_processed_files(output_dir):
 
     except Exception as e:
         print(f"Error cleaning up the processed files: {e}")
+
+def generate_study_guide(template, class_instance):
+    from .models import Lesson, Assignments
+    study_sheet_content = ""
+    context = {
+        'class_name': class_instance.name,
+        'lectures': "\n\n".join([f"{lesson.title}: {lesson.get_lecture_summary()}" for lesson in Lesson.objects.filter(related_class=class_instance)])
+    }
+    
+    # Process the prompts
+    for prompt in template.prompts.all():
+        filled_prompt = prompt.prompt_text.format(**context)
+        response = generate_chat_completion(filled_prompt, use_gpt4=True)
+        study_sheet_content += f"\n{response}\n"
+        context['previous_response'] = response  # Add the previous response to context for the next prompt if needed
+
+    return study_sheet_content

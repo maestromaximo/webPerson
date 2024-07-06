@@ -635,30 +635,18 @@ def study_guide_dashboard(request, class_slug):
         form = TemplateSelectionForm(request.POST)
         if form.is_valid():
             template = form.cleaned_data['template']
-            lessons = form.cleaned_data['lessons']
-            assignments = form.cleaned_data['assignments']
-            return redirect('generate_study_guide', class_slug=class_slug, template_id=template.id, lesson_ids=",".join([str(lesson.id) for lesson in lessons]), assignment_ids=",".join([str(assignment.id) for assignment in assignments]))
+            return redirect('generate_study_guide', class_slug=class_slug, template_id=template.id)
     else:
         form = TemplateSelectionForm()
     return render(request, 'education/study_guide_dashboard.html', {'form': form, 'selected_class': selected_class})
 
 @staff_member_required
-def generate_study_guide(request, class_slug, template_id, lesson_ids, assignment_ids):
+def generate_study_guide(request, class_slug, template_id):
     selected_class = get_object_or_404(Class, slug=class_slug)
     template = get_object_or_404(Template, id=template_id)
-    lessons = Lesson.objects.filter(id__in=lesson_ids.split(','))
-    assignments = Assignment.objects.filter(id__in=assignment_ids.split(','))
 
-    # Process the prompts
-    study_sheet_content = ""
-    for prompt in template.prompts.all():
-        context = {
-            'lessons': [lesson.get_lecture_summary() for lesson in lessons],
-            'assignments': [assignment.description for assignment in assignments],
-        }
-        filled_prompt = prompt.prompt_text.format(**context)
-        response = generate_chat_completion(filled_prompt, use_gpt4=True)
-        study_sheet_content += f"\n{response}\n"
+    # Generate the study guide content
+    study_sheet_content = generate_study_guide(template, selected_class)
 
     # Save the generated study sheet
     study_sheet = StudySheet.objects.create(class_belongs=selected_class, title=f"Study Guide for {selected_class.name}", content=study_sheet_content)

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Class, Concept, LessonEmbedding, Prompt, Schedule, Book, Lesson, Problem, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession, AssigmentQuestion
+from .models import Class, Concept, LessonEmbedding, Prompt, Schedule, Book, Lesson, Problem, StudySheet, Template, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession, AssigmentQuestion
 # GPTInstance
 class ScheduleInline(admin.TabularInline):
     model = Schedule
@@ -105,20 +105,20 @@ class TestAdmin(admin.ModelAdmin):
     list_display = ('related_class', 'date', 'duration')
     list_filter = ('date', 'related_class')
 
-@admin.register(Prompt)
-class PromptAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'active')
-    list_filter = ('active', 'category')
-    search_fields = ('title', 'prompt', 'description')
-    actions = ['make_active', 'make_inactive']
+# @admin.register(Prompt)
+# class PromptAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'category', 'active')
+#     list_filter = ('active', 'category')
+#     search_fields = ('title', 'prompt', 'description')
+#     actions = ['make_active', 'make_inactive']
 
-    @admin.action(description='Mark selected prompts as active')
-    def make_active(self, request, queryset):
-        queryset.update(active=True)
+#     @admin.action(description='Mark selected prompts as active')
+#     def make_active(self, request, queryset):
+#         queryset.update(active=True)
 
-    @admin.action(description='Mark selected prompts as inactive')
-    def make_inactive(self, request, queryset):
-        queryset.update(active=False)
+#     @admin.action(description='Mark selected prompts as inactive')
+#     def make_inactive(self, request, queryset):
+#         queryset.update(active=False)
 
 # @admin.register(GPTInstance)
 # class GPTInstanceAdmin(admin.ModelAdmin):
@@ -167,4 +167,26 @@ class ConceptAdmin(admin.ModelAdmin):
     ordering = ('title',)
     fields = ('related_class', 'related_lesson', 'title', 'description', 'notes', 'approved')
 
-    
+
+
+@admin.register(Template)
+class TemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description', 'slug')
+    search_fields = ('name', 'description')
+    prepopulated_fields = {'slug': ('name',)}
+    ordering = ('name',)
+
+@admin.register(Prompt)
+class PromptAdmin(admin.ModelAdmin):
+    list_display = ('template', 'order', 'prompt_text')
+    list_filter = ('template',)
+    search_fields = ('prompt_text',)
+    ordering = ('template', 'order')
+
+@admin.register(StudySheet)
+class StudySheetAdmin(admin.ModelAdmin):
+    list_display = ('title', 'class_belongs')
+    list_filter = ('class_belongs',)
+    search_fields = ('title', 'content')
+    ordering = ('class_belongs', 'title')
+    readonly_fields = ('content',)
