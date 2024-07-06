@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import BudgetLog, FieldEntry, Account, Budget, BudgetCategory
+from .models import BudgetLog, FieldEntry, Account, Budget, BudgetCategory, Overspenditure
 import json
 from datetime import datetime, timedelta
 from .utils import classify_transaction_simple, classify_transaction_advanced, update_budget_and_mark_entry
@@ -181,14 +181,28 @@ def dashboard(request):
     for cat in categories:
         total_budget += float(cat.weekly_limit)
     current_balance = total_budget - float(total_withdrawals)
-    
+
     # Calculate last week's balance
     last_week_balance = total_budget - last_week_expenses
 
+    # Check or create Overspenditure object
+    overspenditure, created = Overspenditure.objects.get_or_create(
+        defaults={'last_updated': start_of_week - timedelta(days=7)}
+    )
+
+    # If the last update was not this week, update the overspenditure
+    if overspenditure.last_updated < start_of_week:
+        # Update the overspenditure amount based on last week's balance
+        if last_week_balance < 0:
+            overspenditure.amount += last_week_balance
+        elif last_week_balance > 0 and overspenditure.amount < 0:
+            overspenditure.amount += last_week_balance
+
+        overspenditure.last_updated = start_of_week
+        overspenditure.save()
+
     # Adjust current balance if last week's balance was negative
-    adjusted_balance = current_balance
-    if last_week_balance < 0:
-        adjusted_balance += last_week_balance
+    adjusted_balance = current_balance + overspenditure.amount
 
     graph_data = {
         'labels': [cat.name for cat in categories],
@@ -212,6 +226,7 @@ def dashboard(request):
         'most_common_category': most_common_category,
         'least_common_category': least_common_category,
         'adjusted_balance': round(float(adjusted_balance), 2),
+        'overspenditure': overspenditure,
     }
 
     three_months_ago = datetime.now() - timedelta(days=90)

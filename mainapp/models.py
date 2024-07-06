@@ -113,3 +113,10 @@ class GeneralNotes(models.Model):
     
     def __str__(self):
         return f"General Notes ({self.created_at.strftime('%Y-%m-%d')})" if self.created_at else "General Notes"
+    
+class Overspenditure(models.Model):
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    last_updated = models.DateField()
+
+    def __str__(self):
+        return f"Overspenditure Amount: {self.amount} (Last Updated: {self.last_updated})" if self.last_updated else "Overspenditure Amount"
