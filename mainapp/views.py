@@ -202,7 +202,7 @@ def dashboard(request):
         overspenditure.save()
 
     # Adjust current balance if last week's balance was negative
-    adjusted_balance = current_balance + overspenditure.amount
+    adjusted_balance = current_balance + float(overspenditure.amount)
 
     graph_data = {
         'labels': [cat.name for cat in categories],
