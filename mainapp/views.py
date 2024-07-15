@@ -401,4 +401,4 @@ def chat_with_agent(request):
 @staff_member_required
 @login_required
 def chat_interface(request):
-    return render(request, 'chat.html')
+    return render(request, 'field_agent_chat.html')
