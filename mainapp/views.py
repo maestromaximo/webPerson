@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -160,18 +161,18 @@ def dashboard(request):
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
 
-    total_budget = 0
+    total_budget = Decimal(0)
     total_withdrawals = FieldEntry.objects.filter(
         type='withdrawal', date__range=[start_of_week, end_of_week]
-    ).aggregate(total=Sum('money'))['total'] or 0
+    ).aggregate(total=Sum('money'))['total'] or Decimal(0)
 
     weekly_entries = FieldEntry.objects.filter(date__range=[start_of_week, end_of_week])
-    weekly_expenses = float(weekly_entries.aggregate(total=Sum('money'))['total'] or 0)
+    weekly_expenses = Decimal(weekly_entries.aggregate(total=Sum('money'))['total'] or 0)
 
     # Calculate last week's expenses and balance
     last_week_start = start_of_week - timedelta(days=7)
     last_week_end = start_of_week - timedelta(days=1)
-    last_week_expenses = float(FieldEntry.objects.filter(
+    last_week_expenses = Decimal(FieldEntry.objects.filter(
         date__range=[last_week_start, last_week_end]
     ).aggregate(total=Sum('money'))['total'] or 0)
 
@@ -179,8 +180,8 @@ def dashboard(request):
     categories = budget.categories.all() if budget else []
 
     for cat in categories:
-        total_budget += float(cat.weekly_limit)
-    current_balance = total_budget - float(total_withdrawals)
+        total_budget += Decimal(cat.weekly_limit)
+    current_balance = total_budget - Decimal(total_withdrawals)
 
     # Calculate last week's balance
     last_week_balance = total_budget - last_week_expenses
@@ -194,15 +195,15 @@ def dashboard(request):
     if overspenditure.last_updated < start_of_week:
         # Update the overspenditure amount based on last week's balance
         if last_week_balance < 0:
-            overspenditure.amount += last_week_balance
+            overspenditure.amount += Decimal(last_week_balance)
         elif last_week_balance > 0 and overspenditure.amount < 0:
-            overspenditure.amount += last_week_balance
+            overspenditure.amount += Decimal(last_week_balance)
 
         overspenditure.last_updated = start_of_week
         overspenditure.save()
 
     # Adjust current balance if last week's balance was negative
-    adjusted_balance = current_balance + float(overspenditure.amount)
+    adjusted_balance = current_balance + overspenditure.amount
 
     graph_data = {
         'labels': [cat.name for cat in categories],
@@ -218,7 +219,7 @@ def dashboard(request):
         'total_deposits': float(total_budget),
         'total_withdrawals': float(total_withdrawals),
         'current_balance': round(float(current_balance), 2),
-        'weekly_expenses': weekly_expenses,
+        'weekly_expenses': float(weekly_expenses),
         'weekly_trend': round(float(((weekly_expenses - last_week_expenses) / last_week_expenses * 100) if last_week_expenses else 0), 2),
         'graph_data': graph_data,
         'budget_categories': categories,
