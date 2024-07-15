@@ -8,6 +8,8 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('budget/', views.budget, name='budget'),
     path('budget/update/', views.update_budget, name='update_budget'),
+    path('chat/', views.chat_interface, name='chat_interface'),
+    path('chat/api/', views.chat_with_agent, name='chat_with_agent'),
 
     path('privacy/', views.privacy, name='privacy'),
 

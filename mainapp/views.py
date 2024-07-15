@@ -383,3 +383,22 @@ def update_budget(request):
                 category.weekly_limit = new_limit
                 category.save()
     return redirect('budget')
+
+
+def get_agent_response(message):
+    # Replace this with actual logic for agent response
+    return f"Echo: {message}"
+
+@csrf_exempt
+def chat_with_agent(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        message = data.get('message', '')
+        response = get_agent_response(message)
+        return JsonResponse({'response': response})
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+@staff_member_required
+@login_required
+def chat_interface(request):
+    return render(request, 'chat.html')
