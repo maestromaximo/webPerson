@@ -1,3 +1,4 @@
+from decimal import Decimal
 import requests
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 import json
@@ -6,6 +7,7 @@ import tiktoken
 import os
 from dotenv import load_dotenv
 from .models import BudgetCategory, FieldEntry
+from django.db.models import Sum
 # Load environment variables from .env file
 load_dotenv()
 
@@ -13,6 +15,64 @@ load_dotenv()
 # OPENAI_API_KEY = 
 
 # client = OpenAI()
+from autogen import AssistantAgent, UserProxyAgent
+
+llm_config = {"model": "gpt-4", "api_key": os.getenv("OPENAI_API_KEY")}
+assistant = AssistantAgent("assistant", llm_config=llm_config)
+
+# Define code execution configuration
+code_execution_config = {
+    "use_docker": False,
+    "python": {
+        "enabled": True,
+        "function_whitelist": [
+            "get_all_field_entries",
+            "get_total_deposits",
+            "get_total_withdrawals",
+            "get_entries_by_category",
+            "get_entry_summary",
+        ],
+    }
+}
+
+user_proxy = UserProxyAgent("user_proxy", code_execution_config=code_execution_config)
+
+# Define functions accessible to the agent
+def get_all_field_entries():
+    return list(FieldEntry.objects.all().values())
+
+def get_total_deposits():
+    return FieldEntry.objects.filter(type='deposit').aggregate(total=Sum('money'))['total'] or Decimal('0.00')
+
+def get_total_withdrawals():
+    return FieldEntry.objects.filter(type='withdrawal').aggregate(total=Sum('money'))['total'] or Decimal('0.00')
+
+def get_entries_by_category(category):
+    return list(FieldEntry.objects.filter(category=category).values())
+
+def get_entry_summary():
+    total_deposits = get_total_deposits()
+    total_withdrawals = get_total_withdrawals()
+    current_balance = total_deposits - total_withdrawals
+    return {
+        "total_deposits": total_deposits,
+        "total_withdrawals": total_withdrawals,
+        "current_balance": current_balance,
+    }
+
+# Register functions with the assistant agent
+assistant.register_function({"get_all_field_entries": get_all_field_entries})
+assistant.register_function({"get_total_deposits": get_total_deposits})
+assistant.register_function({"get_total_withdrawals": get_total_withdrawals})
+assistant.register_function({"get_entries_by_category": get_entries_by_category})
+# assistant.register_function({"get_entry_summary": get_entry_summary})
+
+def get_agent_response(message):
+    response = user_proxy.initiate_chat(
+        assistant,
+        message=message,
+    )
+    return response.get("response", "No response from agent.")
 
 def classify_transaction_simple(entry, set_misc=False):
     description = entry.message.lower()
@@ -39,7 +99,7 @@ def classify_transaction_simple(entry, set_misc=False):
 # gpt-3.5-turbo-0613
 # gpt-4-1106-preview
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3))
-def classify_transaction_advanced(entry: FieldEntry, model="gpt-4-1106-preview", function_call='classify_entry'):
+def classify_transaction_advanced(entry: FieldEntry, model="gpt-4o-mini", function_call='classify_entry'):
     api_key = os.getenv("OPENAI_API_KEY")
     headers = {
         "Content-Type": "application/json",

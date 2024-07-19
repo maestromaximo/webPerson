@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required
 
 from collections import defaultdict
 from django.contrib.admin.views.decorators import staff_member_required
+from .utils import get_agent_response
 
 
 def privacy(request):
@@ -385,9 +386,9 @@ def update_budget(request):
     return redirect('budget')
 
 
-def get_agent_response(message):
-    # Replace this with actual logic for agent response
-    return f"Echo: {message}"
+# def get_agent_response(message):
+#     # Replace this with actual logic for agent response
+#     return f"Echo: {message}"
 
 @csrf_exempt
 def chat_with_agent(request):
