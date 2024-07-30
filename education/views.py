@@ -2,6 +2,8 @@ import datetime
 import json
 import os
 import shutil
+from subprocess import PIPE, Popen
+import tempfile
 from PyPDF2 import PdfReader
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
@@ -666,13 +668,52 @@ def generate_study_guide(request, class_slug, template_id, lesson_ids, assignmen
     print(f"Debug: Generating study guide for {selected_class.name} using template {template.name}")
     print(f"Debug: Lessons: {lessons}, Assignments: {assignments}")
 
-    # Generate the study guide content
-    study_sheet_content = generate_study_guide_content(template, selected_class, lessons, assignments)
+    # Generate the study guide content (LaTeX)
+    latex_code = generate_study_guide(template, selected_class, lessons, assignments)
 
-    # Save the generated study sheet
-    study_sheet = StudySheet.objects.create(class_belongs=selected_class, title=f"Study Guide for {selected_class.name}", content=study_sheet_content)
+    # Compile the LaTeX code into a PDF
+    pdf_content = compile_latex_to_pdf(latex_code)
+    if pdf_content:
+        study_sheet = StudySheet.objects.create(
+            class_belongs=selected_class,
+            title=f"Study Guide for {selected_class.name}",
+            content=latex_code,
+            raw_latex=latex_code
+        )
+        study_sheet.pdf.save(f"study_guide_{selected_class.slug}.pdf", ContentFile(pdf_content))
+        study_sheet.save()
+    else:
+        # Handle error in LaTeX compilation
+        study_sheet = StudySheet.objects.create(
+            class_belongs=selected_class,
+            title=f"Study Guide for {selected_class.name}",
+            content=latex_code,
+            raw_latex=latex_code
+        )
 
     return render(request, 'education/study_guide_result.html', {'study_sheet': study_sheet, 'selected_class': selected_class})
+
+##should move to utils
+def compile_latex_to_pdf(latex_code):
+    # Create a temporary directory to store LaTeX files
+    with tempfile.TemporaryDirectory() as tempdir:
+        tex_file_path = os.path.join(tempdir, "document.tex")
+        pdf_file_path = os.path.join(tempdir, "document.pdf")
+        
+        # Write LaTeX code to a .tex file
+        with open(tex_file_path, 'w') as tex_file:
+            tex_file.write(latex_code)
+        
+        # Run pdflatex to compile the LaTeX file to PDF
+        process = Popen(['pdflatex', tex_file_path], cwd=tempdir, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate()
+
+        if process.returncode == 0 and os.path.exists(pdf_file_path):
+            with open(pdf_file_path, 'rb') as pdf_file:
+                return pdf_file.read()
+        else:
+            print(f"Error in LaTeX compilation: {stderr}")
+            return None
 
 
 

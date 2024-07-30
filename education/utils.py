@@ -1019,24 +1019,43 @@ def cleanup_processed_files(output_dir):
     except Exception as e:
         print(f"Error cleaning up the processed files: {e}")
 
-        
+
 def generate_study_guide(template, class_instance, lessons=None, assignments=None):
     from .models import Lesson, Assignment
-    
+
     study_sheet_content = ""
-    context = {
-        'class_name': class_instance.name,
-        'lectures': "\n\n".join([f"{lesson.title}: {lesson.get_lecture_summary()}" for lesson in lessons]) if lessons else ""
-    }
-    
-    # Process the prompts
+    context = [{
+        'role': 'system',
+        'content': 'You are a helpful assistant.'
+    }]
+
+    lectures_text = "\n\n".join([f"{lesson.title}: {lesson.get_lecture_summary()}" for lesson in lessons]) if lessons else ""
+    assignments_text = "\n\n".join([f"{assignment.title}: {assignment.description}" for assignment in assignments]) if assignments else ""
+
+    context.append({
+        'role': 'user',
+        'content': f"Class Name: {class_instance.name}\nLectures: {lectures_text}\nAssignments: {assignments_text}"
+    })
+
     for prompt in template.prompts.all():
-        filled_prompt = prompt.prompt_text.format(**context)
-        response = generate_chat_completion(filled_prompt, use_gpt4=True)
-        study_sheet_content += f"\n{response}\n"
-        context['previous_response'] = response  # Add the previous response to context for the next prompt if needed
+        filled_prompt = prompt.prompt_text
+        response_content, context = query_openai_with_tools(filled_prompt, context=context)
+        study_sheet_content += f"\n{response_content}\n"
+    
+    latex_code = extract_latex_code(study_sheet_content)
+    if not latex_code:
+        response_content, context = query_openai_with_tools("The LaTeX is cut off or not present, please come back again with the full LaTeX for this, make it shorter if it's too long but don't lose information", context=context)
+        latex_code = extract_latex_code(response_content)
+    
+    if latex_code is None:
+        print("Failed to extract LaTeX code from the study guide content.")
+        return None
+    return latex_code
 
-    if assignments:
-        context['assignments'] = "\n\n".join([f"{assignment.title}: {assignment.description}" for assignment in assignments])
+def extract_latex_code(text):
+    import re
+    match = re.search(r'```latex\n(.*?)\n```', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    return None
 
-    return study_sheet_content
