@@ -638,7 +638,7 @@ def process_assignment(request, assignment_id):
 def study_guide_dashboard(request, class_slug):
     selected_class = get_object_or_404(Class, slug=class_slug)
     if request.method == 'POST':
-        form = TemplateSelectionForm(request.POST)
+        form = TemplateSelectionForm(request.POST, class_instance=selected_class)
         print(f"Debug: form data: {form.data}")
         if not form.is_valid():
             for field, errors in form.errors.items():
@@ -654,8 +654,9 @@ def study_guide_dashboard(request, class_slug):
             print(f"Debug: valid form, template: {template}, lessons: {lesson_ids}, assignments: {assignment_ids}")
             return redirect('generate_study_guide', class_slug=class_slug, template_id=template.id, lesson_ids=lesson_ids, assignment_ids=assignment_ids)
     else:
-        form = TemplateSelectionForm()
+        form = TemplateSelectionForm(class_instance=selected_class)
     return render(request, 'education/study_guide_dashboard.html', {'form': form, 'selected_class': selected_class})
+
 
 ##move to utils
 def generate_study_guide(request, class_slug, template_id, lesson_ids, assignment_ids='none'):
