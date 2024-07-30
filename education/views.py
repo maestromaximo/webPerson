@@ -7,6 +7,7 @@ import tempfile
 from PyPDF2 import PdfReader
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
+from django.core.files.base import ContentFile
 import requests
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
@@ -76,6 +77,7 @@ def class_dashboard(request, class_slug):
     class_assignments = Assignment.objects.filter(related_class=selected_class)
     class_tests = Test.objects.filter(related_class=selected_class)
     class_lessons = Lesson.objects.filter(related_class=selected_class)
+    class_study_sheets = selected_class.study_sheets.all()
 
     # Prepare the context
     context = {
@@ -85,6 +87,7 @@ def class_dashboard(request, class_slug):
         'class_assignments': class_assignments,
         'class_tests': class_tests,
         'class_lessons': class_lessons,
+        'class_study_sheets': class_study_sheets,
     }
 
     return render(request, 'education/class_home.html', context)
@@ -654,8 +657,8 @@ def study_guide_dashboard(request, class_slug):
         form = TemplateSelectionForm()
     return render(request, 'education/study_guide_dashboard.html', {'form': form, 'selected_class': selected_class})
 
-@staff_member_required
-def generate_study_guide(request, class_slug, template_id, lesson_ids, assignment_ids):
+##move to utils
+def generate_study_guide(request, class_slug, template_id, lesson_ids, assignment_ids='none'):
     selected_class = get_object_or_404(Class, slug=class_slug)
     template = get_object_or_404(Template, id=template_id)
 
@@ -715,11 +718,10 @@ def compile_latex_to_pdf(latex_code):
             print(f"Error in LaTeX compilation: {stderr}")
             return None
 
-
-
-
-
-
+@login_required
+def view_study_guide(request, study_sheet_id, class_slug=None):
+    study_sheet = get_object_or_404(StudySheet, id=study_sheet_id)
+    return render(request, 'education/view_study_guide.html', {'study_sheet': study_sheet})
 
 
     

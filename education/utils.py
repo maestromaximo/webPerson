@@ -1052,10 +1052,12 @@ def generate_study_guide(template, class_instance, lessons=None, assignments=Non
         return None
     return latex_code
 
-def extract_latex_code(text):
-    import re
-    match = re.search(r'```latex\n(.*?)\n```', text, re.DOTALL)
-    if match:
-        return match.group(1)
+def extract_latex_code(content):
+    start_marker = "```latex"
+    end_marker = "```"
+    start_index = content.find(start_marker)
+    end_index = content.find(end_marker, start_index + len(start_marker))
+    
+    if start_index != -1 and end_index != -1:
+        return content[start_index + len(start_marker):end_index].strip()
     return None
-

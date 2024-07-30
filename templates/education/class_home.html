@@ -61,6 +61,19 @@
             {% endfor %}
           </ul>
         </div>
+
+        <!-- Study Guides -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4">
+          <a href="{% url 'study_guide_dashboard' class_slug=selected_class.slug %}" class="text-xl font-semibold text-gray-900 dark:text-gray-200 hover:text-blue-400 ">Study Guides</a>
+          <ul>
+            {% for study_guide in class_study_sheets %}
+              <li><a href="{% url 'view_study_guide' class_slug=selected_class.slug study_sheet_id=study_guide.id %}">{{ study_guide.title }}</a></li>
+            {% empty %}
+              <li>No study guides found.</li>
+            {% endfor %}
+          </ul>
+        </div>
+         
       </div>
 
       <!-- Right Side Bar - Lessons List -->

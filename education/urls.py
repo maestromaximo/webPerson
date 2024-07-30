@@ -32,6 +32,7 @@ urlpatterns = [
     path('class/<slug:class_slug>/add-lesson/', views.add_lesson_view, name='add_lesson'),
     path('class/<slug:class_slug>/study-guide/', views.study_guide_dashboard, name='study_guide_dashboard'),
     path('class/<slug:class_slug>/study-guide/generate/<int:template_id>/<str:lesson_ids>/<str:assignment_ids>/', views.generate_study_guide, name='generate_study_guide'),
+    path('class/<slug:class_slug>/study-guide/view/<int:study_sheet_id>/', views.view_study_guide, name='view_study_guide'),
 
     path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),
     path('lesson/<slug:lesson_slug>/add-transcriptions/', views.add_transcriptions_view, name='add_transcriptions'),
