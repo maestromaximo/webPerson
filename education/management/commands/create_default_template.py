@@ -36,7 +36,7 @@ class Command(BaseCommand):
             },
             {
                 'order': 5,
-                'prompt_text': "Now, please rewrite the entire study guide in LaTeX format. Only answer with the LaTeX code, no pre-messages or additional text."
+                'prompt_text': "Now, please rewrite the entire study guide in LaTeX format. Only answer with the LaTeX code, no pre-messages or additional text.\n\n**Restrictions:**\n1. Ensure that the LaTeX document starts with \\documentclass{article} and includes the necessary packages such as amsmath, amsfonts, and geometry.\n2. Use the \\begin{document} and \\end{document} tags to enclose the document content.\n3. Ensure all sections, subsections, and environments are properly closed.\n4. Use \\section, \\subsection, and \\subsubsection commands appropriately for sections and subsections.\n5. Ensure all LaTeX commands are correctly spelled and formatted.\n6. Do not include any commands or environments that are not supported by basic LaTeX.\n7. Include the \\maketitle command after defining the title, author, and date.\n8. Ensure all mathematical expressions are enclosed within \\[ \\] or \\( \\) for display and inline math modes respectively.\n9. Ensure any tables or figures are properly formatted and enclosed within the appropriate environments.\n10. Avoid using any non-standard or unsupported LaTeX packages."
             }
         ]
 
