@@ -673,7 +673,7 @@ def generate_study_guide(request, class_slug, template_id, lesson_ids, assignmen
     print(f"Debug: Lessons: {lessons}, Assignments: {assignments}")
 
     # Generate the study guide content (LaTeX)
-    latex_code = generate_study_guide(template, selected_class, lessons, assignments)
+    latex_code = generate_study_guide_content(template, selected_class, lessons, assignments)
 
     # Compile the LaTeX code into a PDF
     pdf_content = compile_latex_to_pdf(latex_code)
