@@ -33,7 +33,7 @@ def chat_viewDEPRECATED(request):
 
         # Fetch user input from the POST request
         user_input = data.get('message', 'No message found')
-        model_name = data.get('model_name', 'gpt-3.5-turbo')
+        model_name = data.get('model_name', 'gpt-4o-mini')
 
         # Prepare the messages for the chat completion request
         context_messages = request.session.get('chat_context', [])

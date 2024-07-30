@@ -253,7 +253,7 @@ def run_python_code(code, filename="script.py"):
     return output
 
 
-def query_openai_with_tools(query, context=None, model="gpt-3.5-turbo", force_tool=None, tools_list=[]):
+def query_openai_with_tools(query, context=None, model="gpt-4o-mini", force_tool=None, tools_list=[]):
     """
     Send a query to OpenAI's API with optional function calls using the updated client object.
 
@@ -601,7 +601,7 @@ def generate_chat_completionOLD(user_question, use_gpt4=False):
     Returns:
     str: The generated completion message.
     """
-    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
     completion = client.chat.completions.create(
         model=model,
         messages=[
@@ -623,7 +623,7 @@ def generate_chat_completion(user_question, use_gpt4=True):
     Returns:
     str: The generated completion message.
     """
-    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
     try:
         completion = client.chat.completions.create(
             model=model,
@@ -645,7 +645,7 @@ def generate_chat_completion(user_question, use_gpt4=True):
         
 
 def interact_with_gpt(text, prompt, use_gpt4=False):
-    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
     completion = client.chat.completions.create(
         model=model,
         response_format={ "type": "json_object" },
@@ -690,7 +690,7 @@ def create_concepts_from_lesson(lesson, use_gpt4=True):
     # Extract formulas mentioned in the lesson
     # formulas_response = generate_chat_completion(f"Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas: {lesson_summary}", use_gpt4=True)
     
-    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
     completion = client.chat.completions.create(
         model=model,
         response_format={ "type": "json_object" },
@@ -760,7 +760,7 @@ def extract_the_most_likely_title(lesson_summary, book_index, use_gpt4=False):
     Returns:
     str: The generated book index section.
     """
-    model = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    model = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
     completion = client.chat.completions.create(
         model=model,
         response_format={ "type": "json_object" },
@@ -793,7 +793,7 @@ def get_gpt_response_with_context(session, user_question:str, use_gpt4=True, les
     """
     # Select the appropriate model based on the function argument
     from .models import Message
-    model_version = "gpt-4o" if use_gpt4 else "gpt-3.5-turbo"
+    model_version = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
 
     # Build the conversation history for context
     messages = session.messages.all()

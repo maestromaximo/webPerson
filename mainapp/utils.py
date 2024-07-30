@@ -193,7 +193,7 @@ def update_budget_and_mark_entry(entry: FieldEntry):
             pass
 
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3))
-def gpt_chat_and_execute_function_bank(question, context, model="gpt-3.5-turbo-0613", function_call='auto'):
+def gpt_chat_and_execute_function_bank(question, context, model="gpt-4o-mini", function_call='auto'):
     """
     Sends a question to the GPT model and executes a function call based on the response.
     The function call is determined by the model's response or by the most relevant function found in the available functions.
