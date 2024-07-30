@@ -20,5 +20,4 @@ from .models import Template, Lesson, Assignment
 class TemplateSelectionForm(forms.Form):
     template = forms.ModelChoiceField(queryset=Template.objects.all(), label="Select Template")
     lessons = forms.ModelMultipleChoiceField(queryset=Lesson.objects.all(), widget=forms.CheckboxSelectMultiple, label="Select Lessons")
-    assignments = forms.ModelMultipleChoiceField(queryset=Assignment.objects.all(), widget=forms.CheckboxSelectMultiple, label="Select Assignments")
-
+    assignments = forms.ModelMultipleChoiceField(queryset=Assignment.objects.all(), widget=forms.CheckboxSelectMultiple, label="Select Assignments", required=False)

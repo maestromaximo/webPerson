@@ -29,7 +29,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 from .forms import TemplateSelectionForm, UploadPDFForm
 from .utils import calculate_cosine_distance, cleanup_processed_files, cosine_similarity, detect_question_marker, extract_pages_as_images, create_pdf_from_pages, extract_text_from_pdf, generate_embedding, interact_with_gpt
-# Create your views here.
+from .utils import generate_study_guide as generate_study_guide_content
+
 from openai import AuthenticationError, OpenAI  # Import the OpenAI class
 client = OpenAI()
 
@@ -633,26 +634,45 @@ def study_guide_dashboard(request, class_slug):
     selected_class = get_object_or_404(Class, slug=class_slug)
     if request.method == 'POST':
         form = TemplateSelectionForm(request.POST)
+        print(f"Debug: form data: {form.data}")
+        if not form.is_valid():
+            for field, errors in form.errors.items():
+                for error in errors:
+                    print(f"Error in {field}: {error}")
+        print(f"Debug: form valid: {form.is_valid()}")
         if form.is_valid():
             template = form.cleaned_data['template']
-            return redirect('generate_study_guide', class_slug=class_slug, template_id=template.id)
+            lessons = form.cleaned_data['lessons']
+            assignments = form.cleaned_data.get('assignments', [])
+            lesson_ids = ','.join(str(lesson.id) for lesson in lessons)
+            assignment_ids = ','.join(str(assignment.id) for assignment in assignments) if assignments else 'none'
+            print(f"Debug: valid form, template: {template}, lessons: {lesson_ids}, assignments: {assignment_ids}")
+            return redirect('generate_study_guide', class_slug=class_slug, template_id=template.id, lesson_ids=lesson_ids, assignment_ids=assignment_ids)
     else:
         form = TemplateSelectionForm()
     return render(request, 'education/study_guide_dashboard.html', {'form': form, 'selected_class': selected_class})
 
 @staff_member_required
-def generate_study_guide(request, class_slug, template_id):
+def generate_study_guide(request, class_slug, template_id, lesson_ids, assignment_ids):
     selected_class = get_object_or_404(Class, slug=class_slug)
     template = get_object_or_404(Template, id=template_id)
 
+    lesson_ids_list = lesson_ids.split(',')
+    assignment_ids_list = assignment_ids.split(',') if assignment_ids != 'none' else []
+
+    lessons = Lesson.objects.filter(id__in=lesson_ids_list)
+    assignments = Assignment.objects.filter(id__in=assignment_ids_list) if assignment_ids_list else []
+
+    print(f"Debug: Generating study guide for {selected_class.name} using template {template.name}")
+    print(f"Debug: Lessons: {lessons}, Assignments: {assignments}")
+
     # Generate the study guide content
-    study_sheet_content = generate_study_guide(template, selected_class)
+    study_sheet_content = generate_study_guide_content(template, selected_class, lessons, assignments)
 
     # Save the generated study sheet
     study_sheet = StudySheet.objects.create(class_belongs=selected_class, title=f"Study Guide for {selected_class.name}", content=study_sheet_content)
 
     return render(request, 'education/study_guide_result.html', {'study_sheet': study_sheet, 'selected_class': selected_class})
-
 
 
 
