@@ -686,62 +686,91 @@ def create_concepts_from_lesson(lesson, use_gpt4=False):
 
     # Extract the lesson summary and create concepts using GPT-4
     lesson_summary = lecture_transcript.summarized
-    # concepts = []
-    # Extract formulas mentioned in the lesson
-    # formulas_response = generate_chat_completion(f"Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas: {lesson_summary}", use_gpt4=True)
-    
+
+    # Define the restrictions/rules for MathJax-compatible LaTeX
+    mathjax_rules = """
+    Any equation or expression MUST be enclosed in \[ ... \] for displayed formulas, any expression or formula HAS to be within this.
+    For Greek letters, use \\alpha, \\beta, …, \\omega: α, β, …, ω.
+    For uppercase letters, use \\Gamma, \\Delta, …, \\Omega: Γ, Δ, …, Ω.
+    Use ^ and _ for superscripts and subscripts. For example, x_i^2: x2i, \\log_2 x: log2x.
+    Use curly braces to delimit a formula to which a superscript or subscript applies: x^y^z is an error; {x^y}^z is xyz, and x^{y^z} is xyz.
+    Use \\frac{a}{b} for fractions: a/b.
+    Use \\sqrt{x} for square roots: √x, \\sqrt[3]{x} for cube roots: ∛x.
+    Use \\sum and \\int for sums and integrals: ∑, ∫.
+    Use \\text{...} for plain text within math.
+    """
+
+    # Prompt for extracting formulas
+    prompt_formulas = f"""
+    Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas.
+    Here is the lesson summary: {lesson_summary}
+    RESTRICTIONS: {mathjax_rules}
+    """
+
     model = "gpt-4o" if use_gpt4 else "gpt-4o-mini"
-    completion = client.chat.completions.create(
-        model=model,
-        response_format={ "type": "json_object" },
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to always output JSON."},
-            {"role": "user", "content": "Please state in LaTeX, all formulas stated on this lesson, please write ONLY those that you consider as formulas that are worth remembering, do not provide normal calculations as formulas, your answer needs to be a JSON with a single list with the formulas for example you would return \{\"formulas\":[formula1,formula2,etc]\}:\n"+f"Here is the lesson summary: {lesson_summary}"},
-        ]
-    )
-    response = completion.choices[0].message.content
+    completion_formulas = generate_chat_completion(prompt_formulas, use_gpt4)
+
+    # Strip the backticks and "json" from the response
+    completion_formulas = completion_formulas.strip().strip('```').replace('json', '').strip()
+
+    # Ensure the JSON response is correctly escaped and formatted
+    completion_formulas = re.sub(r'\\', r'\\\\', completion_formulas)
+    
     values = []
     try:
-        json_response = json.loads(response)
-        ##return the title and page number and we return independent of the keys they two values from the expected dictionary output, but we return none if there are not exactly two values
-        values = list(json_response.values())
-    except Exception as e:
+        print(f"completion_formulas: {completion_formulas}")
+        json_response = json.loads(completion_formulas)
+        if isinstance(json_response, list):
+            values = json_response
+        else:
+            values = list(json_response.values())
+    except (json.JSONDecodeError, KeyError) as e:
         print(f"Error parsing JSON response: {str(e)}")
         return 0
-    
+
     from education.models import Concept
     if len(values) >= 1:
         formulas = values[0]
         for formula in formulas:
-            #Now we create the concepts directly
-            concept = Concept.objects.create(title="Formula", description=formula, related_lesson=lesson, related_class=lesson.related_class)
+            # Wrap the formula in \[...\] for displayed LaTeX rendering
+            formula_wrapped = f"\\[{formula}\\]"
+            # Create the concepts directly
+            concept = Concept.objects.create(title="Formula", description=formula_wrapped, related_lesson=lesson, related_class=lesson.related_class)
             concept.save()
 
-    # Extract physical principles or definitions mentioned in the lesson
-    # Extract physical principles or definitions mentioned in the lesson
-    principles_completion = client.chat.completions.create(
-        model=model,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to always output JSON."},
-            {"role": "user", "content": f"Please list any physical principles or definitions mentioned in this lesson, providing a JSON response with a single list of these principles and definitions:\nHere is the lesson summary: {lesson_summary}"},
-        ]
-    )
-    principles_response = principles_completion.choices[0].message.content
-    values2=[]
+    # Prompt for extracting principles/definitions
+    prompt_principles = f"""
+    Please list any physical principles or definitions mentioned in this lesson, providing a JSON response with a single list of these principles and definitions.
+    Here is the lesson summary: {lesson_summary}
+    RESTRICTIONS: {mathjax_rules}
+    """
+
+    completion_principles = generate_chat_completion(prompt_principles, use_gpt4)
+
+    # Strip the backticks and "json" from the response
+    completion_principles = completion_principles.strip().strip('```').replace('json', '').strip()
+    completion_principles = re.sub(r'\\', r'\\\\', completion_principles)
+
+    values2 = []
     try:
-        principles_json = json.loads(principles_response)
-        values2 = list(principles_json.values())
-    except Exception as e:
+        print(f"completion_principles: {completion_principles}")
+        principles_json = json.loads(completion_principles)
+        if isinstance(principles_json, list):
+            values2 = principles_json
+        else:
+            values2 = list(principles_json.values())
+    except (json.JSONDecodeError, KeyError) as e:
         print(f"Error parsing JSON response for principles: {str(e)}")
         return 0
-    
+
     if len(values2) >= 1:
         principles = values2[0]
         for principle in principles:
-            #Now we create the concepts directly
-            Concept.objects.create(title="Principle/Definition", description=principle, related_lesson=lesson, related_class=lesson.related_class)
-    
+            # Wrap the principle in \[...\] for displayed LaTeX rendering
+            principle_wrapped = f"\\[{principle}\\]"
+            # Create the concepts directly
+            Concept.objects.create(title="Principle/Definition", description=principle_wrapped, related_lesson=lesson, related_class=lesson.related_class)
+
     return 1
         
 
