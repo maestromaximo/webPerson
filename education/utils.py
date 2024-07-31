@@ -669,7 +669,7 @@ def calculate_cosine_distance(embedding1, embedding2):
 #It does this by asking the generate_chat_completion function things like what formulas were mentioned in the lesson
 #and then it uses the response to create the concepts
 #it also asks things like "where there any physical principles or definitions mentioned in the lesson" and uses the response to create concepts
-def create_concepts_from_lesson(lesson, use_gpt4=True):
+def create_concepts_from_lesson(lesson, use_gpt4=False):
     """
     Create concepts from a lesson by summarizing it and extracting key information using GPT-4.
 
