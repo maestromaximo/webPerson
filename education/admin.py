@@ -88,7 +88,7 @@ class TranscriptAdmin(admin.ModelAdmin):
 
 @admin.register(Notes)
 class NotesAdmin(admin.ModelAdmin):
-    list_display = ('related_lesson', 'file')
+    list_display = ('name','related_lesson', 'file')
     list_filter = ('related_lesson__related_class__name',)
 
 @admin.register(Assignment)
