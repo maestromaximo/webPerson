@@ -47,6 +47,10 @@ class Command(BaseCommand):
                         # Get the email content
                         email_subject = decode_header(msg["subject"])[0][0]
                         email_from = decode_header(msg.get("From"))[0][0]
+
+                        # Decode email subject if it's bytes-like
+                        if isinstance(email_subject, bytes):
+                            email_subject = email_subject.decode()
                         self.stdout.write(self.style.SUCCESS(f"Processing email from {email_from} with subject {email_subject}"))
 
                         if "assignment" in email_subject.lower():
