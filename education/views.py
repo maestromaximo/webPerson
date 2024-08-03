@@ -724,6 +724,54 @@ def view_study_guide(request, study_sheet_id, class_slug=None):
     study_sheet = get_object_or_404(StudySheet, id=study_sheet_id)
     return render(request, 'education/view_study_guide.html', {'study_sheet': study_sheet})
 
+from PyPDF2 import PdfMerger
+
+@staff_member_required
+def generate_combined_formula_sheet(request, class_slug, template_id):
+    selected_class = get_object_or_404(Class, slug=class_slug)
+    template = get_object_or_404(Template, id=template_id)
+    lessons = selected_class.lessons.all()
+    lesson_groups = [lessons[i:i+3] for i in range(0, len(lessons), 3)]
+
+    pdf_contents = []
+
+    for group in lesson_groups:
+        lesson_ids_list = [lesson.id for lesson in group]
+        lesson_ids = ','.join(map(str, lesson_ids_list))
+        latex_code = generate_study_guide_content(template, selected_class, lessons=group)
+        pdf_content = compile_latex_to_pdf(latex_code)
+        if pdf_content:
+            pdf_contents.append(pdf_content)
+
+    if pdf_contents:
+        # Combine PDFs
+        merger = PdfMerger()
+        for content in pdf_contents:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
+                temp_pdf.write(content)
+                merger.append(temp_pdf.name)
+                temp_pdf.close()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as combined_pdf:
+            merger.write(combined_pdf.name)
+            merger.close()
+            combined_pdf.seek(0)
+            final_pdf_content = combined_pdf.read()
+
+        study_sheet = StudySheet.objects.create(
+            class_belongs=selected_class,
+            title=f"Formula Sheet for {selected_class.name}",
+            content="",  # You might want to store the combined LaTeX code here if needed
+            raw_latex=""
+        )
+        study_sheet.pdf.save(f"formula_sheet_{selected_class.slug}.pdf", ContentFile(final_pdf_content))
+        study_sheet.save()
+
+        return render(request, 'education/study_guide_result.html', {'study_sheet': study_sheet, 'selected_class': selected_class})
+    else:
+        # Handle error in LaTeX compilation
+        return render(request, 'education/error.html', {'message': "Failed to generate the formula sheet PDF."})
+
 
     
 class ClassViewSet(viewsets.ModelViewSet):

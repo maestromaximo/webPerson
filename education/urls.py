@@ -34,6 +34,8 @@ urlpatterns = [
     path('class/<slug:class_slug>/study-guide/generate/<int:template_id>/<str:lesson_ids>/<str:assignment_ids>/', views.generate_study_guide, name='generate_study_guide'),
     path('class/<slug:class_slug>/study-guide/view/<int:study_sheet_id>/', views.view_study_guide, name='view_study_guide'),
 
+    path('class/<slug:class_slug>/formula-sheet/generate-combined/<int:template_id>/', views.generate_combined_formula_sheet, name='generate_combined_formula_sheet'),
+    
     path('lesson/<slug:lesson_slug>/', views.lesson_dashboard, name='lesson_dashboard'),
     path('lesson/<slug:lesson_slug>/add-transcriptions/', views.add_transcriptions_view, name='add_transcriptions'),
 
