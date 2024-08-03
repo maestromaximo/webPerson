@@ -744,6 +744,8 @@ def generate_combined_formula_sheet(request, class_slug, template_id):
         pdf_content = compile_latex_to_pdf(latex_code)
         if pdf_content:
             pdf_contents.append(pdf_content)
+        else:
+            print(f"Error: LaTeX compilation failed for lessons {lesson_ids}")
 
     if pdf_contents:
         # Combine PDFs
@@ -751,25 +753,33 @@ def generate_combined_formula_sheet(request, class_slug, template_id):
         for content in pdf_contents:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
                 temp_pdf.write(content)
-                merger.append(temp_pdf.name)
                 temp_pdf.close()
+                try:
+                    merger.append(temp_pdf.name)
+                except Exception as e:
+                    print(f"Error appending PDF: {e}")
+                    print(f"Skipping file: {temp_pdf.name}")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as combined_pdf:
-            merger.write(combined_pdf.name)
-            merger.close()
-            combined_pdf.seek(0)
-            final_pdf_content = combined_pdf.read()
+            try:
+                merger.write(combined_pdf.name)
+                merger.close()
+                combined_pdf.seek(0)
+                final_pdf_content = combined_pdf.read()
 
-        study_sheet = StudySheet.objects.create(
-            class_belongs=selected_class,
-            title=f"Formula Sheet for {selected_class.name}",
-            content="",  # You might want to store the combined LaTeX code here if needed
-            raw_latex=""
-        )
-        study_sheet.pdf.save(f"formula_sheet_{selected_class.slug}.pdf", ContentFile(final_pdf_content))
-        study_sheet.save()
+                study_sheet = StudySheet.objects.create(
+                    class_belongs=selected_class,
+                    title=f"Formula Sheet for {selected_class.name}",
+                    content="",  # You might want to store the combined LaTeX code here if needed
+                    raw_latex=""
+                )
+                study_sheet.pdf.save(f"formula_sheet_{selected_class.slug}.pdf", ContentFile(final_pdf_content))
+                study_sheet.save()
 
-        return render(request, 'education/study_guide_result.html', {'study_sheet': study_sheet, 'selected_class': selected_class})
+                return render(request, 'education/study_guide_result.html', {'study_sheet': study_sheet, 'selected_class': selected_class})
+            except Exception as e:
+                print(f"Error writing combined PDF: {e}")
+                return render(request, 'education/error.html', {'message': "Failed to generate the formula sheet PDF."})
     else:
         # Handle error in LaTeX compilation
         return render(request, 'education/error.html', {'message': "Failed to generate the formula sheet PDF."})
