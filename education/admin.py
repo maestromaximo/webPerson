@@ -37,6 +37,10 @@ class TestInline(admin.TabularInline):
     model = Test
     extra = 1
 
+class PromptInline(admin.TabularInline):
+    model = Prompt
+    extra = 1  # Number of extra forms to display
+
 class MessageInline(admin.TabularInline):
     model = Message
     extra = 1  # Allows adding at least one new message when creating a session
@@ -183,6 +187,7 @@ class TemplateAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
     ordering = ('name',)
+    inlines = [PromptInline]
 
 @admin.register(Prompt)
 class PromptAdmin(admin.ModelAdmin):
