@@ -78,6 +78,7 @@ def class_dashboard(request, class_slug):
     class_tests = Test.objects.filter(related_class=selected_class)
     class_lessons = Lesson.objects.filter(related_class=selected_class)
     class_study_sheets = selected_class.study_sheets.all()
+    formula_template = Template.objects.filter(slug="basic-formula-extraction").first()
 
     # Prepare the context
     context = {
@@ -88,6 +89,7 @@ def class_dashboard(request, class_slug):
         'class_tests': class_tests,
         'class_lessons': class_lessons,
         'class_study_sheets': class_study_sheets,
+        'template': formula_template,
     }
 
     return render(request, 'education/class_home.html', context)
