@@ -95,6 +95,13 @@ class NotesAdmin(admin.ModelAdmin):
 class AssignmentAdmin(admin.ModelAdmin):
     list_display = ('description', 'due_date', 'related_class')
     list_filter = ('due_date', 'related_class')
+    actions = ['clear_answer_pdfs']
+
+    @admin.action(description='Clear answer PDFs for selected assignments')
+    def clear_answer_pdfs(self, request, queryset):
+        queryset.update(answer_pdf=None)
+        self.message_user(request, "Selected assignments' answer PDFs have been cleared.")
+
 
 @admin.register(ProblemSet)
 class ProblemSetAdmin(admin.ModelAdmin):
