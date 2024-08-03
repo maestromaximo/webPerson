@@ -52,6 +52,9 @@ class Command(BaseCommand):
                         msg = email.message_from_bytes(response_part[1])
                         email_subject = decode_header(msg["subject"])[0][0]
                         email_from = decode_header(msg.get("From"))[0][0]
+                        # Decode email subject if it's bytes-like
+                        if isinstance(email_subject, bytes):
+                            email_subject = email_subject.decode()
                         self.stdout.write(self.style.SUCCESS(f"Processing email from {email_from} with subject {email_subject}"))
 
                         if "assignment" in email_subject.lower():
@@ -66,7 +69,7 @@ class Command(BaseCommand):
                                     file_name, encoding = decode_header(file_name)[0]
                                     if isinstance(file_name, bytes):
                                         file_name = file_name.decode(encoding if encoding else 'utf-8')
-                                    
+
                                 if file_name and file_name.lower().endswith('.pdf'):
                                     file_path = os.path.join(settings.MEDIA_ROOT, 'assignments', file_name)
                                     with open(file_path, 'wb') as f:
@@ -168,7 +171,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Assignments found: {assignments.count()}"))
         self.stdout.write(self.style.SUCCESS(f"PDF sections created: {len(pdf_sections)}"))
 
-        for assignment in assignments:
+        for i, assignment in enumerate(assignments):
             if not assignment.answer_pdf:
                 section_pdf_path = pdf_sections.pop(0) if pdf_sections else None
                 if section_pdf_path:
@@ -218,7 +221,7 @@ class Command(BaseCommand):
         if not pages:
             print(f"No pages to create PDF for {output_path}")
             return
-        
+
         pdf_writer = fitz.open()  # Corrected initialization
         print(f"Creating PDF: {output_path} with pages: {pages}")
         for page_num in pages:
@@ -234,10 +237,10 @@ class Command(BaseCommand):
     def create_assignment_question(self, pdf_path, assignment, question_number):
         random_suffix = str(random.randint(10000000, 99999999))
         final_pdf_path = os.path.join('assignments', 'answers', 'sectioned', f'Q{question_number}_{random_suffix}.pdf')
-        
+
         # Ensure the directory exists
         os.makedirs(os.path.dirname(os.path.join(settings.MEDIA_ROOT, final_pdf_path)), exist_ok=True)
-        
+
         os.rename(pdf_path, os.path.join(settings.MEDIA_ROOT, final_pdf_path))
         section_name = os.path.basename(final_pdf_path).replace('.pdf', '')
 
