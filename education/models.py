@@ -470,6 +470,24 @@ class StudySheet(models.Model):
     def __str__(self):
         return self.title
     
+
+class ClassBook(models.Model):
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True, blank=True, null=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+    classes = models.ManyToManyField('Class', related_name='class_books', blank=True)
+    pdf = models.FileField(upload_to='class_books/', blank=True, null=True)
+    latex_content = models.TextField(blank=True, null=True)  # or you can use HTMLField() if using some package like django-ckeditor
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+    
 # class GPTInstance(models.Model):
 #     model_name = models.CharField(max_length=70)
 #     slug = models.SlugField(max_length=70, unique=True)

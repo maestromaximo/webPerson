@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Class, Concept, LessonEmbedding, Prompt, Schedule, Book, Lesson, Problem, StudySheet, Template, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession, AssigmentQuestion
+from .models import Class, ClassBook, Concept, LessonEmbedding, Prompt, Schedule, Book, Lesson, Problem, StudySheet, Template, Tool, Transcript, Notes, Assignment, ProblemSet, Test, Message, ChatSession, AssigmentQuestion
 # GPTInstance
 class ScheduleInline(admin.TabularInline):
     model = Schedule
@@ -48,6 +48,17 @@ class MessageInline(admin.TabularInline):
     readonly_fields = ['timestamp']
     can_delete = True
     show_change_link = True
+
+class ClassInline(admin.TabularInline):
+    model = ClassBook.classes.through
+    extra = 1
+
+@admin.register(ClassBook)
+class ClassBookAdmin(admin.ModelAdmin):
+    list_display = ('name', 'date_created', 'date_modified')
+    prepopulated_fields = {"slug": ("name",)}
+    inlines = [ClassInline]
+    filter_horizontal = ('classes',)
 
 @admin.register(Class)
 class ClassAdmin(admin.ModelAdmin):

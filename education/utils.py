@@ -1090,3 +1090,24 @@ def extract_latex_code(content):
     if start_index != -1 and end_index != -1:
         return content[start_index + len(start_marker):end_index].strip()
     return None
+
+def compile_latex_to_pdf(latex_code):
+    # Create a temporary directory to store LaTeX files
+    with tempfile.TemporaryDirectory() as tempdir:
+        tex_file_path = os.path.join(tempdir, "document.tex")
+        pdf_file_path = os.path.join(tempdir, "document.pdf")
+        
+        # Write LaTeX code to a .tex file
+        with open(tex_file_path, 'w') as tex_file:
+            tex_file.write(latex_code)
+        
+        # Run pdflatex to compile the LaTeX file to PDF
+        process = subprocess.Popen(['pdflatex', tex_file_path], cwd=tempdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if process.returncode == 0 and os.path.exists(pdf_file_path):
+            with open(pdf_file_path, 'rb') as pdf_file:
+                return pdf_file.read()
+        else:
+            print(f"Error in LaTeX compilation: {stderr}")
+            return None
