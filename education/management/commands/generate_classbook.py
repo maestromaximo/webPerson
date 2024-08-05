@@ -5,6 +5,7 @@ from PyPDF2 import PdfMerger
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 from django.core.files.base import ContentFile
+from tqdm import tqdm
 from education.models import Class, ClassBook
 from education.utils import generate_study_guide as generate_study_guide_content, compile_latex_to_pdf
 
@@ -25,7 +26,7 @@ class Command(BaseCommand):
             pdf_paths = []
 
             # Generate LaTeX content and compile PDFs for each class
-            for cls in Class.objects.all():
+            for cls in tqdm(Class.objects.all(), desc="Processing classes"):
                 self.stdout.write(self.style.NOTICE(f'Processing class: {cls.name}'))
                 class_pdf_path = os.path.join(tempdir, f"{slugify(cls.name)}.pdf")
                 pdf_paths.append(class_pdf_path)
@@ -53,18 +54,18 @@ class Command(BaseCommand):
 
         latex_content += r"\section*{" + cls.name + "}\n"
 
-        for lesson in cls.lessons.all():
+        for lesson in tqdm(cls.lessons.all(), desc=f"Processing lessons for {cls.name}"):
             self.stdout.write(self.style.NOTICE(f'Processing lesson: {lesson.title}'))
             latex_content += r"\subsection*{" + lesson.title + "}\n"
             latex_content += r"\begin{quote}\n"
             latex_content += lesson.get_lecture_summary()
             latex_content += r"\end{quote}\n"
 
-            for note in lesson.notes.all():
+            for note in tqdm(lesson.notes.all(), desc=f"Including notes for {lesson.title}"):
                 self.stdout.write(self.style.NOTICE(f'Including note for lesson: {lesson.title}'))
                 latex_content += r"\includepdf[pages=-]{" + note.file.path.replace('\\', '/').replace('_', '\_') + "}\n"
 
-        for idx, assignment in enumerate(cls.assignments.all(), start=1):
+        for idx, assignment in enumerate(tqdm(cls.assignments.all(), desc=f"Processing assignments for {cls.name}"), start=1):
             self.stdout.write(self.style.NOTICE(f'Processing assignment {idx} for class: {cls.name}'))
             latex_content += r"\subsection*{Assignment " + str(idx) + "}\n"
             if assignment.pdf:
@@ -89,6 +90,7 @@ class Command(BaseCommand):
     def merge_pdfs(self, pdf_paths, output_path):
         merger = PdfMerger()
         for pdf_path in pdf_paths:
+            self.stdout.write(self.style.NOTICE(f'Merging PDF: {pdf_path}'))
             merger.append(pdf_path)
         merger.write(output_path)
         merger.close()
@@ -101,11 +103,13 @@ class Command(BaseCommand):
         toc_latex_content += r"\tableofcontents"
         toc_latex_content += r"\end{document}"
 
+        self.stdout.write(self.style.NOTICE('Compiling table of contents...'))
         toc_pdf_content = compile_latex_to_pdf(toc_latex_content)
         toc_pdf_path = os.path.join(tempfile.gettempdir(), "table_of_contents.pdf")
         with open(toc_pdf_path, 'wb') as toc_pdf_file:
             toc_pdf_file.write(toc_pdf_content)
 
+        self.stdout.write(self.style.NOTICE('Merging table of contents with the final PDF...'))
         merger = PdfMerger()
         merger.append(toc_pdf_path)
         merger.append(input_pdf_path)
