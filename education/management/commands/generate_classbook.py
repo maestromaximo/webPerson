@@ -5,8 +5,8 @@ from PyPDF2 import PdfMerger
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 from django.core.files.base import ContentFile
-from myapp.models import Class, ClassBook, StudySheet, Assignment
-from myapp.utils import generate_study_guide as generate_study_guide_content, compile_latex_to_pdf
+from education.models import Class, ClassBook
+from education.utils import generate_study_guide as generate_study_guide_content, compile_latex_to_pdf
 
 class Command(BaseCommand):
     help = 'Generate a comprehensive PDF book for all classes'
@@ -20,75 +20,94 @@ class Command(BaseCommand):
         )
         self.stdout.write(self.style.NOTICE('ClassBook instance created.'))
 
-        # Generate LaTeX content for the entire book
-        self.stdout.write(self.style.NOTICE('Generating LaTeX content...'))
-        latex_content, toc_content = self.generate_latex_content()
+        # Temporary directory to store individual PDFs
+        with tempfile.TemporaryDirectory() as tempdir:
+            pdf_paths = []
 
-        self.stdout.write(self.style.NOTICE('Combining table of contents with main content...'))
-        # Combine the table of contents with the main content
-        full_latex_content = r"\documentclass{book}"
-        full_latex_content += r"\usepackage{times}"
-        full_latex_content += r"\usepackage{pdfpages}"
-        full_latex_content += r"\begin{document}"
-        full_latex_content += r"\tableofcontents"
-        full_latex_content += toc_content
-        full_latex_content += latex_content
-        full_latex_content += r"\end{document}"
+            # Generate LaTeX content and compile PDFs for each class
+            for cls in Class.objects.all():
+                self.stdout.write(self.style.NOTICE(f'Processing class: {cls.name}'))
+                class_pdf_path = os.path.join(tempdir, f"{slugify(cls.name)}.pdf")
+                pdf_paths.append(class_pdf_path)
+                self.generate_and_compile_class_pdf(cls, class_pdf_path)
 
-        self.stdout.write(self.style.NOTICE('Compiling LaTeX content to PDF...'))
-        # Compile LaTeX content to PDF
-        pdf_content = compile_latex_to_pdf(full_latex_content)
+            # Merge all class PDFs into one final PDF
+            final_pdf_path = os.path.join(tempdir, "final_classbook.pdf")
+            self.merge_pdfs(pdf_paths, final_pdf_path)
 
-        if pdf_content:
-            self.stdout.write(self.style.NOTICE('Saving the final PDF to the ClassBook model...'))
+            # Add table of contents to the final PDF
+            final_pdf_with_toc_path = os.path.join(tempdir, "final_classbook_with_toc.pdf")
+            self.add_table_of_contents(pdf_paths, final_pdf_path, final_pdf_with_toc_path)
+
             # Save the final PDF to the ClassBook model
-            class_book.pdf.save(f"classbook_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf", ContentFile(pdf_content))
-            class_book.save()
-            self.stdout.write(self.style.SUCCESS('Successfully generated the ClassBook'))
+            with open(final_pdf_with_toc_path, 'rb') as final_pdf_file:
+                class_book.pdf.save(f"classbook_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf", ContentFile(final_pdf_file.read()))
+                class_book.save()
+                self.stdout.write(self.style.SUCCESS('Successfully generated the ClassBook'))
+
+    def generate_and_compile_class_pdf(self, cls, output_path):
+        latex_content = r"\documentclass{article}"
+        latex_content += r"\usepackage{times}"
+        latex_content += r"\usepackage{pdfpages}"
+        latex_content += r"\begin{document}"
+
+        latex_content += r"\section*{" + cls.name + "}\n"
+
+        for lesson in cls.lessons.all():
+            self.stdout.write(self.style.NOTICE(f'Processing lesson: {lesson.title}'))
+            latex_content += r"\subsection*{" + lesson.title + "}\n"
+            latex_content += r"\begin{quote}\n"
+            latex_content += lesson.get_lecture_summary()
+            latex_content += r"\end{quote}\n"
+
+            for note in lesson.notes.all():
+                self.stdout.write(self.style.NOTICE(f'Including note for lesson: {lesson.title}'))
+                latex_content += r"\includepdf[pages=-]{" + note.file.path.replace('\\', '/').replace('_', '\_') + "}\n"
+
+        for idx, assignment in enumerate(cls.assignments.all(), start=1):
+            self.stdout.write(self.style.NOTICE(f'Processing assignment {idx} for class: {cls.name}'))
+            latex_content += r"\subsection*{Assignment " + str(idx) + "}\n"
+            if assignment.pdf:
+                latex_content += r"\includepdf[pages=-]{" + assignment.pdf.path.replace('\\', '/').replace('_', '\_') + "}\n"
+            latex_content += r"\subsubsection*{Solutions}\n"
+            if assignment.answer_pdf:
+                latex_content += r"\includepdf[pages=-]{" + assignment.answer_pdf.path.replace('\\', '/').replace('_', '\_') + "}\n"
+
+        latex_content += r"\end{document}"
+
+        # Compile LaTeX content to PDF
+        pdf_content = compile_latex_to_pdf(latex_content)
+
+        # Save the compiled PDF to the specified output path
+        if pdf_content:
+            with open(output_path, 'wb') as pdf_file:
+                pdf_file.write(pdf_content)
+            self.stdout.write(self.style.SUCCESS(f'Successfully compiled PDF for class: {cls.name}'))
         else:
-            self.stdout.write(self.style.ERROR('Failed to generate the ClassBook PDF'))
+            self.stdout.write(self.style.ERROR(f'Failed to compile PDF for class: {cls.name}'))
 
-    def generate_latex_content(self):
-        latex_content = ""
-        toc_content = ""
+    def merge_pdfs(self, pdf_paths, output_path):
+        merger = PdfMerger()
+        for pdf_path in pdf_paths:
+            merger.append(pdf_path)
+        merger.write(output_path)
+        merger.close()
 
-        self.stdout.write(self.style.NOTICE('Starting LaTeX content generation for each class...'))
-        for cls in Class.objects.all():
-            self.stdout.write(self.style.NOTICE(f'Processing class: {cls.name}'))
-            toc_content += r"\chapter{" + cls.name + "}\n"
-            latex_content += r"\chapter{" + cls.name + "}\n"
-            for lesson in cls.lessons.all():
-                self.stdout.write(self.style.NOTICE(f'Processing lesson: {lesson.title}'))
-                toc_content += r"\section{" + lesson.title + "}\n"
-                latex_content += r"\section{" + lesson.title + "}\n"
-                latex_content += r"\subsection*{Summary}\n"
-                latex_content += r"\begin{quote}\n"
-                latex_content += lesson.get_lecture_summary()
-                latex_content += r"\end{quote}\n"
+    def add_table_of_contents(self, pdf_paths, input_pdf_path, output_pdf_path):
+        toc_latex_content = r"\documentclass{book}"
+        toc_latex_content += r"\usepackage{times}"
+        toc_latex_content += r"\usepackage{pdfpages}"
+        toc_latex_content += r"\begin{document}"
+        toc_latex_content += r"\tableofcontents"
+        toc_latex_content += r"\end{document}"
 
-                for note in lesson.notes.all():
-                    self.stdout.write(self.style.NOTICE(f'Including note for lesson: {lesson.title}'))
-                    note_pdf_content = self.get_pdf_content(note.file.path)
-                    if note_pdf_content:
-                        latex_content += r"\includepdf[pages=-]{" + note.file.path.replace('\\', '/').replace('_', '\_') + "}\n"
+        toc_pdf_content = compile_latex_to_pdf(toc_latex_content)
+        toc_pdf_path = os.path.join(tempfile.gettempdir(), "table_of_contents.pdf")
+        with open(toc_pdf_path, 'wb') as toc_pdf_file:
+            toc_pdf_file.write(toc_pdf_content)
 
-            for idx, assignment in enumerate(cls.assignments.all(), start=1):
-                self.stdout.write(self.style.NOTICE(f'Processing assignment {idx} for class: {cls.name}'))
-                toc_content += r"\section*{Assignment " + str(idx) + "}\n"
-                latex_content += r"\section*{Assignment " + str(idx) + "}\n"
-                if assignment.pdf:
-                    latex_content += r"\includepdf[pages=-]{" + assignment.pdf.path.replace('\\', '/').replace('_', '\_') + "}\n"
-                latex_content += r"\subsection*{Solutions}\n"
-                if assignment.answer_pdf:
-                    latex_content += r"\includepdf[pages=-]{" + assignment.answer_pdf.path.replace('\\', '/').replace('_', '\_') + "}\n"
-
-        return latex_content, toc_content
-
-    def get_pdf_content(self, file_path):
-        try:
-            self.stdout.write(self.style.NOTICE(f'Reading PDF file: {file_path}'))
-            with open(file_path, 'rb') as pdf_file:
-                return pdf_file.read()
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error reading PDF file {file_path}: {e}"))
-            return None
+        merger = PdfMerger()
+        merger.append(toc_pdf_path)
+        merger.append(input_pdf_path)
+        merger.write(output_pdf_path)
+        merger.close()
