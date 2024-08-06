@@ -90,14 +90,18 @@ class Command(BaseCommand):
         \\end{{document}}
         """
         self.stdout.write(self.style.NOTICE(f'LaTeX content for lesson {lesson.title}: {latex_content}'))
-        pdf_content = compile_latex_to_pdf(latex_content)
-        lesson_pdf_path = os.path.join(tempdir, f"{slugify(lesson.title)}.pdf")
-        if pdf_content:
-            with open(lesson_pdf_path, 'wb') as lesson_pdf:
-                lesson_pdf.write(pdf_content)
-            return lesson_pdf_path
-        else:
-            self.stdout.write(self.style.ERROR(f'Failed to compile PDF for lesson: {lesson.title}'))
+        try:
+            pdf_content = compile_latex_to_pdf(latex_content)
+            lesson_pdf_path = os.path.join(tempdir, f"{slugify(lesson.title)}.pdf")
+            if pdf_content:
+                with open(lesson_pdf_path, 'wb') as lesson_pdf:
+                    lesson_pdf.write(pdf_content)
+                return lesson_pdf_path
+            else:
+                self.stdout.write(self.style.ERROR(f'Failed to compile PDF for lesson: {lesson.title}'))
+                return None
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Exception occurred while compiling PDF for lesson: {lesson.title} - {str(e)}'))
             return None
 
     def get_assignment_pdf_paths(self, cls):
