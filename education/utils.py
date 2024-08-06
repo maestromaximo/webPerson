@@ -1102,8 +1102,10 @@ def compile_latex_to_pdf(latex_code):
             tex_file.write(latex_code)
         
         # Run pdflatex to compile the LaTeX file to PDF
+        print(f"Compiling LaTeX to PDF from compile to latex function: {tex_file_path}")
         process = subprocess.Popen(['pdflatex', tex_file_path], cwd=tempdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
+        print("Comunication done")
 
         if process.returncode == 0 and os.path.exists(pdf_file_path):
             with open(pdf_file_path, 'rb') as pdf_file:
