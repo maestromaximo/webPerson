@@ -91,11 +91,10 @@ class Command(BaseCommand):
         \\usepackage{{times}}
         \\begin{{document}}
         \\section*{{{lesson.title}}}
-        {lesson.get_lecture_summary()}
         \\end{{document}}
         """
         print("debugging latex_content in") 
-        
+
         pdf_content = compile_latex_to_pdf(latex_content)
         lesson_pdf_path = os.path.join(tempdir, f"{slugify(lesson.title)}.pdf")
         with open(lesson_pdf_path, 'wb') as lesson_pdf:
