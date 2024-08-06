@@ -58,7 +58,8 @@ class Command(BaseCommand):
         lesson_pdf_paths = []
         for lesson in tqdm(cls.lessons.all(), desc=f"Processing lessons for {cls.name}"):
             lesson_pdf_path = self.generate_and_compile_lesson_pdf(lesson, tempdir)
-            lesson_pdf_paths.append(lesson_pdf_path)
+            if lesson_pdf_path:
+                lesson_pdf_paths.append(lesson_pdf_path)
 
         # Merge cover page, lessons, notes, and assignments into a single class PDF
         class_pdf_paths = [cover_page_path] + lesson_pdf_paths + self.get_assignment_pdf_paths(cls) + self.get_notes_pdf_paths(cls)
@@ -76,30 +77,28 @@ class Command(BaseCommand):
         """
 
     def generate_and_compile_lesson_pdf(self, lesson, tempdir):
-        # latex_content = f"""
-        # \\documentclass{{article}}
-        # \\usepackage{{times}}
-        # \\begin{{document}}
-        # \\section*{{{lesson.title}}}
-        # \\begin{{quote}}
-        # {lesson.get_lecture_summary()}
-        # \\end{{quote}}
-        # \\end{{document}}
-        # """
+        summary = lesson.get_lecture_summary()
+        self.stdout.write(self.style.NOTICE(f'Generating LaTeX for lesson: {lesson.title}'))
         latex_content = f"""
         \\documentclass{{article}}
         \\usepackage{{times}}
         \\begin{{document}}
         \\section*{{{lesson.title}}}
+        \\begin{{quote}}
+        {summary}
+        \\end{{quote}}
         \\end{{document}}
         """
-        print("debugging latex_content in") 
-
+        self.stdout.write(self.style.NOTICE(f'LaTeX content for lesson {lesson.title}: {latex_content}'))
         pdf_content = compile_latex_to_pdf(latex_content)
         lesson_pdf_path = os.path.join(tempdir, f"{slugify(lesson.title)}.pdf")
-        with open(lesson_pdf_path, 'wb') as lesson_pdf:
-            lesson_pdf.write(pdf_content)
-        return lesson_pdf_path
+        if pdf_content:
+            with open(lesson_pdf_path, 'wb') as lesson_pdf:
+                lesson_pdf.write(pdf_content)
+            return lesson_pdf_path
+        else:
+            self.stdout.write(self.style.ERROR(f'Failed to compile PDF for lesson: {lesson.title}'))
+            return None
 
     def get_assignment_pdf_paths(self, cls):
         pdf_paths = []
