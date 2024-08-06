@@ -76,16 +76,26 @@ class Command(BaseCommand):
         """
 
     def generate_and_compile_lesson_pdf(self, lesson, tempdir):
+        # latex_content = f"""
+        # \\documentclass{{article}}
+        # \\usepackage{{times}}
+        # \\begin{{document}}
+        # \\section*{{{lesson.title}}}
+        # \\begin{{quote}}
+        # {lesson.get_lecture_summary()}
+        # \\end{{quote}}
+        # \\end{{document}}
+        # """
         latex_content = f"""
         \\documentclass{{article}}
         \\usepackage{{times}}
         \\begin{{document}}
         \\section*{{{lesson.title}}}
-        \\begin{{quote}}
         {lesson.get_lecture_summary()}
-        \\end{{quote}}
         \\end{{document}}
         """
+        print("debugging latex_content in") 
+        
         pdf_content = compile_latex_to_pdf(latex_content)
         lesson_pdf_path = os.path.join(tempdir, f"{slugify(lesson.title)}.pdf")
         with open(lesson_pdf_path, 'wb') as lesson_pdf:
