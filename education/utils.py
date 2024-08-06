@@ -1091,7 +1091,7 @@ def extract_latex_code(content):
         return content[start_index + len(start_marker):end_index].strip()
     return None
 
-def compile_latex_to_pdf(latex_code):
+def compile_latex_to_pdfOLD(latex_code):
     # Create a temporary directory to store LaTeX files
     with tempfile.TemporaryDirectory() as tempdir:
         tex_file_path = os.path.join(tempdir, "document.tex")
@@ -1112,4 +1112,30 @@ def compile_latex_to_pdf(latex_code):
                 return pdf_file.read()
         else:
             print(f"Error in LaTeX compilation: {stderr}")
+            return None
+
+def compile_latex_to_pdf(latex_code):
+    with tempfile.TemporaryDirectory() as tempdir:
+        tex_file_path = os.path.join(tempdir, "document.tex")
+        pdf_file_path = os.path.join(tempdir, "document.pdf")
+        
+        with open(tex_file_path, 'w') as tex_file:
+            tex_file.write(latex_code)
+        
+        print(f"Compiling LaTeX to PDF: {tex_file_path}")
+        try:
+            process = subprocess.run(['pdflatex', '-interaction=nonstopmode', tex_file_path], 
+                                     cwd=tempdir, capture_output=True, text=True, timeout=120)
+            
+            if process.returncode == 0 and os.path.exists(pdf_file_path):
+                with open(pdf_file_path, 'rb') as pdf_file:
+                    return pdf_file.read()
+            else:
+                print(f"Error in LaTeX compilation: {process.stderr}")
+                return None
+        except subprocess.TimeoutExpired:
+            print("LaTeX compilation timed out")
+            return None
+        except Exception as e:
+            print(f"Unexpected error during LaTeX compilation: {str(e)}")
             return None
