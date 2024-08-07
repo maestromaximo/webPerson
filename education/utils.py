@@ -1114,7 +1114,7 @@ def compile_latex_to_pdf(latex_code):
             print(f"Error in LaTeX compilation: {stderr}")
             return None
 
-def compile_latex_to_pdf_book(latex_code):
+def compile_latex_to_pdf_bookOLD(latex_code):
     with tempfile.TemporaryDirectory() as tempdir:
         tex_file_path = os.path.join(tempdir, "document.tex")
         pdf_file_path = os.path.join(tempdir, "document.pdf")
@@ -1139,3 +1139,36 @@ def compile_latex_to_pdf_book(latex_code):
         except Exception as e:
             print(f"Unexpected error during LaTeX compilation: {str(e)}")
             return None
+        
+def compile_latex_to_pdf_book(latex_code, tempdir=None, lesson_title=None):
+    if tempdir is None:
+        tempdir = tempfile.mkdtemp()
+    
+    tex_file_path = os.path.join(tempdir, "document.tex")
+    pdf_file_path = os.path.join(tempdir, "document.pdf")
+    
+    with open(tex_file_path, 'w') as tex_file:
+        tex_file.write(latex_code)
+    
+    print(f"Compiling LaTeX to PDF: {tex_file_path}")
+    try:
+        process = subprocess.run(['pdflatex', '-interaction=nonstopmode', tex_file_path], 
+                                 cwd=tempdir, capture_output=True, text=True, timeout=120)
+        
+        if process.returncode == 0 and os.path.exists(pdf_file_path):
+            with open(pdf_file_path, 'rb') as pdf_file:
+                return pdf_file.read(), None
+        else:
+            print(f"Error in LaTeX compilation: {process.stderr}")
+            if lesson_title:
+                error_log_path = os.path.join(tempdir, f"{slugify(lesson_title)}_error.log")
+                with open(error_log_path, 'w') as error_log_file:
+                    error_log_file.write(process.stderr)
+                return None, process.stderr
+            return None, process.stderr
+    except subprocess.TimeoutExpired:
+        print("LaTeX compilation timed out")
+        return None, "LaTeX compilation timed out"
+    except Exception as e:
+        print(f"Unexpected error during LaTeX compilation: {str(e)}")
+        return None, str(e)
