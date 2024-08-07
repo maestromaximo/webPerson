@@ -1146,8 +1146,8 @@ def compile_latex_to_pdf_book(latex_code, tempdir=None, lesson_title=None):
 
 
     #debug
-    print(latex_code)
-    input("Press Enter to continue...")
+    # print(latex_code)
+    # input("Press Enter to continue...")
 
     if tempdir is None:
         tempdir = tempfile.mkdtemp()
