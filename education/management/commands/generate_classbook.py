@@ -75,21 +75,36 @@ class Command(BaseCommand):
         \\end{{document}}
         """
 
-    def apply_markdown_to_latex(self, text):
+    def apply_markdown_to_latex(text):
+        # Remove unintended line breaks within words
+        text = re.sub(r'\n+', ' ', text)
+
+        # Apply Markdown to LaTeX conversion rules
         text = re.sub(r'\*\*(.*?)\*\*', r'\\textbf{\1}', text)
         text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text)
         text = re.sub(r'\\\[(.*?)\\\]', r'\\begin{equation*}\1\\end{equation*}', text)
+        
+        # Handle ordered lists
         text = re.sub(r'(\n\d+\.\s)', r'\n\\item ', text)
         text = re.sub(r'(^|\n)(\d+\.\s.*(\n|$))+', r'\n\\begin{enumerate}\n\g<0>\\end{enumerate}\n', text, flags=re.MULTILINE)
+
+        # Handle unordered lists
         text = re.sub(r'(\n\s*-\s)', r'\n\\item ', text)
         text = re.sub(r'(^|\n)(\s*-\s.*(\n|$))+', r'\n\\begin{itemize}\n\g<0>\\end{itemize}\n', text, flags=re.MULTILINE)
+
+        # Handle headers
         text = re.sub(r'(?m)^#\s+(.*?)$', r'\\subsection*{\1}', text)
         text = re.sub(r'(?m)^##\s+(.*?)$', r'\\subsubsection*{\1}', text)
+
+        # Handle inline code and code blocks
         text = re.sub(r'```(.*?)```', r'\\begin{verbatim}\1\\end{verbatim}', text, flags=re.DOTALL)
         text = re.sub(r'`(.*?)`', r'\\texttt{\1}', text)
+
+        # Handle horizontal rules and links
         text = re.sub(r'---', r'\\hrulefill', text)
         text = re.sub(r'\[(.*?)\]\((.*?)\)', r'\\href{\2}{\1}', text)
         return text
+
 
     def generate_and_compile_lesson_pdf(self, lesson, tempdir):
         summary = lesson.get_lecture_summary()
@@ -139,6 +154,7 @@ class Command(BaseCommand):
         except Exception as e:
             print(f'Exception occurred while compiling PDF for lesson: {lesson.title} - {str(e)}')
             return None
+
         
     def get_assignment_pdf_paths(self, cls):
         pdf_paths = []
