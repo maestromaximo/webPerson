@@ -1091,7 +1091,7 @@ def extract_latex_code(content):
         return content[start_index + len(start_marker):end_index].strip()
     return None
 
-def compile_latex_to_pdfOLD(latex_code):
+def compile_latex_to_pdf(latex_code):
     # Create a temporary directory to store LaTeX files
     with tempfile.TemporaryDirectory() as tempdir:
         tex_file_path = os.path.join(tempdir, "document.tex")
@@ -1114,7 +1114,7 @@ def compile_latex_to_pdfOLD(latex_code):
             print(f"Error in LaTeX compilation: {stderr}")
             return None
 
-def compile_latex_to_pdf(latex_code):
+def compile_latex_to_pdf_book(latex_code):
     with tempfile.TemporaryDirectory() as tempdir:
         tex_file_path = os.path.join(tempdir, "document.tex")
         pdf_file_path = os.path.join(tempdir, "document.pdf")

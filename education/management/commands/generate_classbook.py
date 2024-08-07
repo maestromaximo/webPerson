@@ -7,7 +7,7 @@ from django.utils.text import slugify
 from django.core.files.base import ContentFile
 from tqdm import tqdm
 from education.models import Class, ClassBook, Lesson, Assignment, Notes
-from education.utils import compile_latex_to_pdf
+from education.utils import compile_latex_to_pdf_book
 
 class Command(BaseCommand):
     help = 'Generate a comprehensive PDF book for all classes'
@@ -42,7 +42,7 @@ class Command(BaseCommand):
 
     def generate_and_compile_class_pdf(self, cls, output_path, tempdir):
         cover_page_latex = self.generate_class_cover_page(cls)
-        cover_page_pdf = compile_latex_to_pdf(cover_page_latex)
+        cover_page_pdf = compile_latex_to_pdf_book(cover_page_latex)
         if cover_page_pdf is None:
             print(f"Failed to compile cover page for class: {cls.name}")
             return
@@ -86,7 +86,7 @@ class Command(BaseCommand):
         """
         print(f'LaTeX content for lesson {lesson.title}: {latex_content[:100]}...') # Print first 100 characters
         try:
-            pdf_content = compile_latex_to_pdf(latex_content)
+            pdf_content = compile_latex_to_pdf_book(latex_content)
             if pdf_content is None:
                 print(f'Failed to compile PDF for lesson: {lesson.title}')
                 return None
@@ -138,7 +138,7 @@ class Command(BaseCommand):
         \end{document}
         """
         print('Compiling table of contents...')
-        toc_pdf_content = compile_latex_to_pdf(toc_latex_content)
+        toc_pdf_content = compile_latex_to_pdf_book(toc_latex_content)
         if toc_pdf_content is None:
             print("Failed to compile table of contents")
             return
