@@ -75,7 +75,7 @@ class Command(BaseCommand):
         \\end{{document}}
         """
 
-    def apply_markdown_to_latex(text):
+    def apply_markdown_to_latex(self, text):
         # Remove unintended line breaks within words
         text = re.sub(r'\n+', ' ', text)
 
