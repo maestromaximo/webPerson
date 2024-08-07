@@ -72,12 +72,48 @@ class Command(BaseCommand):
         \\end{{document}}
         """
 
+    def apply_markdown_to_latex(text):
+        # Bold text
+        text = re.sub(r'\*\*(.*?)\*\*', r'\\textbf{\1}', text)
+        
+        # Inline math
+        text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text)
+        
+        # Display math
+        text = re.sub(r'\\\[(.*?)\\\]', r'\\begin{equation*}\1\\end{equation*}', text)
+        
+        # Numbered lists
+        text = re.sub(r'(\n\d+\.\s)', r'\n\\item ', text)
+        text = re.sub(r'(^|\n)(\d+\.\s.*(\n|$))+', r'\n\\begin{enumerate}\n\g<0>\\end{enumerate}\n', text, flags=re.MULTILINE)
+        
+        # Bullet lists
+        text = re.sub(r'(\n\s*-\s)', r'\n\\item ', text)
+        text = re.sub(r'(^|\n)(\s*-\s.*(\n|$))+', r'\n\\begin{itemize}\n\g<0>\\end{itemize}\n', text, flags=re.MULTILINE)
+        
+        # Headers (assuming you want to use subsections for headers within lessons)
+        text = re.sub(r'(?m)^#\s+(.*?)$', r'\\subsection*{\1}', text)
+        text = re.sub(r'(?m)^##\s+(.*?)$', r'\\subsubsection*{\1}', text)
+        
+        # Code blocks (using verbatim environment)
+        text = re.sub(r'```(.*?)```', r'\\begin{verbatim}\1\\end{verbatim}', text, flags=re.DOTALL)
+        
+        # Inline code
+        text = re.sub(r'`(.*?)`', r'\\texttt{\1}', text)
+        
+        # Horizontal rule
+        text = re.sub(r'---', r'\\hrulefill', text)
+        
+        # Links
+        text = re.sub(r'\[(.*?)\]\((.*?)\)', r'\\href{\2}{\1}', text)
+        
+        return text
+    
     def generate_and_compile_lesson_pdf(self, lesson, tempdir):
         summary = lesson.get_lecture_summary()
         print(f'Generating LaTeX for lesson: {lesson.title}')
         
         # Apply Markdown-like formatting to the summary
-        formatted_summary = apply_markdown_to_latex(summary)
+        formatted_summary = self.apply_markdown_to_latex(summary)
         
         latex_content = f"""
         \\documentclass{{article}}
@@ -118,41 +154,7 @@ class Command(BaseCommand):
             print(f'Exception occurred while compiling PDF for lesson: {lesson.title} - {str(e)}')
             return None
         
-    def apply_markdown_to_latex(text):
-        # Bold text
-        text = re.sub(r'\*\*(.*?)\*\*', r'\\textbf{\1}', text)
-        
-        # Inline math
-        text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text)
-        
-        # Display math
-        text = re.sub(r'\\\[(.*?)\\\]', r'\\begin{equation*}\1\\end{equation*}', text)
-        
-        # Numbered lists
-        text = re.sub(r'(\n\d+\.\s)', r'\n\\item ', text)
-        text = re.sub(r'(^|\n)(\d+\.\s.*(\n|$))+', r'\n\\begin{enumerate}\n\g<0>\\end{enumerate}\n', text, flags=re.MULTILINE)
-        
-        # Bullet lists
-        text = re.sub(r'(\n\s*-\s)', r'\n\\item ', text)
-        text = re.sub(r'(^|\n)(\s*-\s.*(\n|$))+', r'\n\\begin{itemize}\n\g<0>\\end{itemize}\n', text, flags=re.MULTILINE)
-        
-        # Headers (assuming you want to use subsections for headers within lessons)
-        text = re.sub(r'(?m)^#\s+(.*?)$', r'\\subsection*{\1}', text)
-        text = re.sub(r'(?m)^##\s+(.*?)$', r'\\subsubsection*{\1}', text)
-        
-        # Code blocks (using verbatim environment)
-        text = re.sub(r'```(.*?)```', r'\\begin{verbatim}\1\\end{verbatim}', text, flags=re.DOTALL)
-        
-        # Inline code
-        text = re.sub(r'`(.*?)`', r'\\texttt{\1}', text)
-        
-        # Horizontal rule
-        text = re.sub(r'---', r'\\hrulefill', text)
-        
-        # Links
-        text = re.sub(r'\[(.*?)\]\((.*?)\)', r'\\href{\2}{\1}', text)
-        
-        return text
+    
 
     def get_assignment_pdf_paths(self, cls):
         pdf_paths = []
