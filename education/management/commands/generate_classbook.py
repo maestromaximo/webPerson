@@ -72,7 +72,7 @@ class Command(BaseCommand):
         \\end{{document}}
         """
 
-    def apply_markdown_to_latex(text):
+    def apply_markdown_to_latex(self, text):
         # Bold text
         text = re.sub(r'\*\*(.*?)\*\*', r'\\textbf{\1}', text)
         
