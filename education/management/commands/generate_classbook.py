@@ -44,9 +44,11 @@ class Command(BaseCommand):
 
     def generate_and_compile_class_pdf(self, cls, output_path, tempdir):
         cover_page_latex = self.generate_class_cover_page(cls)
-        cover_page_pdf = compile_latex_to_pdf_book(cover_page_latex)
+        cover_page_pdf, error_log = compile_latex_to_pdf_book(cover_page_latex)
         if cover_page_pdf is None:
             print(f"Failed to compile cover page for class: {cls.name}")
+            if error_log:
+                print(f'LaTeX Error Log for {cls.name} cover page:\n{error_log}')
             return
 
         cover_page_path = os.path.join(tempdir, f"{slugify(cls.name)}_cover.pdf")
