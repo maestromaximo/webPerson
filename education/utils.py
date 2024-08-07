@@ -1140,6 +1140,8 @@ def compile_latex_to_pdf_bookOLD(latex_code):
             print(f"Unexpected error during LaTeX compilation: {str(e)}")
             return None
         
+from django.utils.text import slugify
+        
 def compile_latex_to_pdf_book(latex_code, tempdir=None, lesson_title=None):
     if tempdir is None:
         tempdir = tempfile.mkdtemp()
