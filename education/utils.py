@@ -1149,11 +1149,11 @@ def compile_latex_to_pdf_book(latex_code, tempdir=None, lesson_title=None):
     tex_file_path = os.path.join(tempdir, "document.tex")
     pdf_file_path = os.path.join(tempdir, "document.pdf")
     
-    # Encode latex_code as UTF-8
-    latex_code_utf8 = latex_code.encode('utf-8', errors='ignore').decode('utf-8')
+    # Handle potential non-UTF-8 characters
+    latex_code_cleaned = latex_code.encode('ascii', 'ignore').decode('ascii')
     
-    with open(tex_file_path, 'w', encoding='utf-8') as tex_file:
-        tex_file.write(latex_code_utf8)
+    with open(tex_file_path, 'w', encoding='ascii') as tex_file:
+        tex_file.write(latex_code_cleaned)
     
     print(f"Compiling LaTeX to PDF: {tex_file_path}")
     try:
@@ -1167,7 +1167,7 @@ def compile_latex_to_pdf_book(latex_code, tempdir=None, lesson_title=None):
             print(f"Error in LaTeX compilation: {process.stderr}")
             if lesson_title:
                 error_log_path = os.path.join(tempdir, f"{slugify(lesson_title)}_error.log")
-                with open(error_log_path, 'w', encoding='utf-8') as error_log_file:
+                with open(error_log_path, 'w', encoding='ascii') as error_log_file:
                     error_log_file.write(process.stderr)
             return None, process.stderr
     except subprocess.TimeoutExpired:

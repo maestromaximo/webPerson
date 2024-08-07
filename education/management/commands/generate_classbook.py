@@ -67,7 +67,6 @@ class Command(BaseCommand):
     def generate_class_cover_page(self, cls):
         return f"""
         \\documentclass{{article}}
-        \\usepackage[utf8]{{inputenc}}
         \\usepackage{{times}}
         \\begin{{document}}
         \\begin{{center}}
@@ -95,11 +94,13 @@ class Command(BaseCommand):
     def generate_and_compile_lesson_pdf(self, lesson, tempdir):
         summary = lesson.get_lecture_summary()
         print(f'Generating LaTeX for lesson: {lesson.title}')
-        formatted_summary = self.apply_markdown_to_latex(summary)
+        
+        # Clean the summary to remove potential non-ASCII characters
+        summary_cleaned = ''.join(char for char in summary if ord(char) < 128)
+        formatted_summary = self.apply_markdown_to_latex(summary_cleaned)
         
         latex_content = f"""
         \\documentclass{{article}}
-        \\usepackage[utf8]{{inputenc}}
         \\usepackage{{times}}
         \\usepackage{{amsmath}}
         \\usepackage{{amssymb}}
