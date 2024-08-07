@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
     def generate_and_compile_class_pdf(self, cls, output_path, tempdir):
         cover_page_latex = self.generate_class_cover_page(cls)
-        cover_page_pdf, error_log = compile_latex_to_pdf_book(cover_page_latex)
+        cover_page_pdf, error_log = compile_latex_to_pdf_book(cover_page_latex, tempdir, f"{cls.name}_cover")
         if cover_page_pdf is None:
             print(f"Failed to compile cover page for class: {cls.name}")
             if error_log:
@@ -67,6 +67,7 @@ class Command(BaseCommand):
     def generate_class_cover_page(self, cls):
         return f"""
         \\documentclass{{article}}
+        \\usepackage[utf8]{{inputenc}}
         \\usepackage{{times}}
         \\begin{{document}}
         \\begin{{center}}
@@ -98,6 +99,7 @@ class Command(BaseCommand):
         
         latex_content = f"""
         \\documentclass{{article}}
+        \\usepackage[utf8]{{inputenc}}
         \\usepackage{{times}}
         \\usepackage{{amsmath}}
         \\usepackage{{amssymb}}
@@ -136,7 +138,7 @@ class Command(BaseCommand):
         except Exception as e:
             print(f'Exception occurred while compiling PDF for lesson: {lesson.title} - {str(e)}')
             return None
-
+        
     def get_assignment_pdf_paths(self, cls):
         pdf_paths = []
         for idx, assignment in enumerate(cls.assignments.all(), start=1):
